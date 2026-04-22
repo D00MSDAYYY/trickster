@@ -24,12 +24,9 @@ export const EventCard = ({
 }: EventCardProps) => {
   const { name, tags, is_registered, points } = eventInfo;
 
-  // Увеличили порог срабатывания свайпа (было 60, стало 120)
-  const SWIPE_THRESHOLD = 60;
-  // Максимальное смещение в пикселях (можно оставить 120 или увеличить)
-  const MAX_OFFSET = 70;
-
+  const SWIPE_THRESHOLD = 100;
   const [offsetX, setOffsetX] = useState(0);
+  const [isPressed, setIsPressed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
@@ -40,24 +37,21 @@ export const EventCard = ({
     startXRef.current = clientX;
     currentOffsetRef.current = offsetX;
     isDraggingRef.current = true;
+    setIsPressed(true);
   }, [offsetX]);
 
   const handleMove = useCallback((clientX: number) => {
     if (!isDraggingRef.current) return;
     const diff = clientX - startXRef.current;
-    
-    // Добавляем сопротивление: умножаем diff на коэффициент < 1, чтобы движение было медленнее
-    const RESISTANCE = 0.7; // чем меньше число, тем "тяжелее" двигать
-    let newOffset = currentOffsetRef.current + diff * RESISTANCE;
-    
-    // Ограничиваем смещение симметрично от -MAX_OFFSET до MAX_OFFSET
-    newOffset = Math.min(MAX_OFFSET, Math.max(newOffset, -MAX_OFFSET));
+    let newOffset = currentOffsetRef.current + diff;
+    newOffset = Math.min(150, Math.max(newOffset, -150));
     setOffsetX(newOffset);
   }, []);
 
   const handleEnd = useCallback(() => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    setIsPressed(false);
 
     const swipedLeft = offsetX < -SWIPE_THRESHOLD;
     const swipedRight = offsetX > SWIPE_THRESHOLD;
@@ -75,6 +69,7 @@ export const EventCard = ({
     onTouchStart: (e: React.TouchEvent) => handleStart(e.touches[0].clientX),
     onTouchMove: (e: React.TouchEvent) => handleMove(e.touches[0].clientX),
     onTouchEnd: handleEnd,
+    onTouchCancel: handleEnd,
   };
 
   const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
@@ -95,8 +90,16 @@ export const EventCard = ({
 
   const topSectionStyle = {
     transform: `translateX(${offsetX}px)`,
-    transition: isDraggingRef.current ? 'none' : 'transform 0.3s ease-out',
+    transition: isDraggingRef.current
+      ? 'none'
+      : 'transform 0.3s ease-out, filter 0.15s ease-out',
+    filter: isPressed ? 'brightness(0.9)' : 'brightness(1)',
   };
+
+  // Класс для нижней панели с учётом регистрации
+  const topPanelClass = is_registered
+    ? `${styles.topPanel} ${styles.topPanelRegistered}`
+    : styles.topPanel;
 
   return (
     <div
@@ -105,10 +108,10 @@ export const EventCard = ({
       {...touchHandlers}
       {...mouseHandlers}
     >
-      <div className={styles.bottomPanel}></div>
+      <div className={styles.bottomPanel} />
 
       <div
-        className={styles.topPanel}
+        className={topPanelClass}
         style={topSectionStyle}
         onClick={onMoreClick}
       >
