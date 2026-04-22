@@ -8,7 +8,6 @@
   box-sizing: border-box;
   touch-action: pan-y;
   user-select: none;
-  // убираем фиксированную высоту, пусть определяется содержимым
 }
 
 .topPanel {
@@ -16,11 +15,9 @@
   z-index: 2;
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  will-change: transform;
-  transition: transform 0.3s ease-out;
-  background-color: var(--background-surface-primary); // фон верхней панели
-  // добавляем небольшой внутренний отступ, если нужно, но не более
-  // padding: 12px; // перенесём в panelContent
+  background-color: var(--background-surface-primary);
+  border-radius: inherit; // наследуем скругление от контейнера
+  overflow: hidden;       // обрезаем содержимое по границам скругления
 }
 
 .bottomPanel {
@@ -35,11 +32,6 @@
   align-items: center;
   padding-left: 20px;
   border-radius: inherit;
-  transition: background-color 0.3s;
-
-  &.bottomPanelRegistered {
-    background-color: #4caf50;
-  }
 }
 
 .registrationLabel {
@@ -57,11 +49,13 @@
 }
 
 .panelContent {
-  // Убираем height: 100%, иначе панель может растягиваться
   display: flex;
   flex-direction: column;
   padding: 12px;
   box-sizing: border-box;
+  border-radius: inherit; // тоже наследуем скругление
+  overflow: hidden;       // на всякий случай
+  background-color: inherit; // берём фон от Panel
 }
 
 .tag {
@@ -71,7 +65,6 @@
   font-size: 14px;
 }
 
-// Убираем стандартные отступы у заголовков внутри карточки
 .panelContent :global(.TypographyTitle),
 .panelContent :global(.TypographyBody) {
   margin: 0 0 4px 0;
