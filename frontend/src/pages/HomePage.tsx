@@ -1,53 +1,45 @@
+import { useState } from 'react';
 import { EventCard, EventInfo } from '../components/EventCard/EventCard';
+import { EventInfoDisplayer } from '../components/EventInfoDisplayer';
 
 const mockEvents: EventInfo[] = [
-  {
-    name: 'Конференция по React',
-    tags: ['React', 'Frontend'],
-    is_registered: false,
-    points: 150,
-  },
-  {
-    name: 'Воркшоп по FastAPI',
-    tags: ['Python', 'Backend', 'API'],
-    is_registered: true,
-    points: 200,
-  },
-  {
-    name: 'Встреча сообщества VK Mini Apps',
-    tags: ['VK', 'Mini Apps', 'Сообщество'],
-    is_registered: false,
-    points: 75,
-  },
+  { name: 'Конференция по React', tags: ['React', 'Frontend'], is_registered: false, points: 150 },
+  { name: 'Воркшоп по FastAPI', tags: ['Python', 'Backend', 'API'], is_registered: true, points: 200 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
+  { name: 'Встреча сообщества VK Mini Apps', tags: ['VK', 'Mini Apps', 'Сообщество'], is_registered: false, points: 75 },
 ];
 
 const HomePage = () => {
-  const handleMoreClick = (eventName: string) => {
-    console.log(`Переход к событию: ${eventName}`);
-  };
+  const [selectedEvent, setSelectedEvent] = useState<EventInfo | null>(null);
 
-  const handleRegister = (eventName: string) => {
-    console.log(`Зарегистрирован на: ${eventName}`);
-  };
+  const handleMoreClick = (event: EventInfo) => setSelectedEvent(event);
+  const handleBack = () => setSelectedEvent(null);
+  const handleRegisterSwapped = (eventName: string) => console.log(`Зарегистрирован: ${eventName}`);
+  const handleUnregisterSwapped = (eventName: string) => console.log(`Отмена: ${eventName}`);
 
-  const handleUnregister = (eventName: string) => {
-    console.log(`Отмена регистрации: ${eventName}`);
-  };
+  if (selectedEvent) {
+    return <EventInfoDisplayer eventName={selectedEvent.name} onBack={handleBack} />;
+  }
 
   return (
-    <div>
+    <>
       {mockEvents.map((event) => (
         <EventCard
           key={event.name}
           eventInfo={event}
-          onMoreClick={() => handleMoreClick(event.name)}
-          onRegisterSwapped={() => handleRegister(event.name)}
-          onUnregisterSwapped={() => handleUnregister(event.name)}
+          onMoreClick={() => handleMoreClick(event)}
+          onRegisterSwapped={() => handleRegisterSwapped(event.name)}
+          onUnregisterSwapped={() => handleUnregisterSwapped(event.name)}
         />
       ))}
-    </div>
+    </>
   );
 };
 
-// 👇 Вот эта строка решает проблему
 export default HomePage;

@@ -96,7 +96,6 @@ export const EventCard = ({
     filter: isPressed ? 'brightness(0.9)' : 'brightness(1)',
   };
 
-  // Класс для нижней панели с учётом регистрации
   const topPanelClass = is_registered
     ? `${styles.topPanel} ${styles.topPanelRegistered}`
     : styles.topPanel;
@@ -116,8 +115,14 @@ export const EventCard = ({
         onClick={onMoreClick}
       >
         <Panel mode="primary" className={styles.panelContent}>
-          <Typography.Title variant="medium-strong">{name}</Typography.Title>
-          <Typography.Body>Баллы: {points}</Typography.Body>
+          <div className={styles.header}>
+            <Typography.Title variant="medium-strong" className={styles.title}>
+              {name}
+            </Typography.Title>
+            <div className={styles.pointsBadge}>
+              <span className={styles.pointsValue}>{points}</span>
+            </div>
+          </div>
           <Flex gap={8} wrap="wrap" style={{ marginTop: 8 }}>
             {tags.map((tag, idx) => (
               <span key={idx} className={styles.tag}>

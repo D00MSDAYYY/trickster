@@ -19,10 +19,8 @@
   display: flex;
   border-radius: inherit;
   background: linear-gradient(to right, #ff4d4d 0%, #ff4d4d 50%, #4caf50 50%, #4caf50 100%);
-  border: 1px solid black; // базовая рамка как у контейнера
+  border: 1px solid black;
   box-sizing: border-box;
-
-  
 }
 
 .topPanel {
@@ -33,11 +31,10 @@
   background-color: var(--background-surface-primary);
   border-radius: inherit;
   overflow: hidden;
-  border: 1px solid black; // чёрная рамка верхней панели
+  border: 1px solid black;
 
- // Класс для зарегистрированных событий
   &.topPanelRegistered {
-    border: 5px solid #4caf50; // зелёная рамка потолще
+    border: 7px solid #4caf50;
   }
 }
 
@@ -50,6 +47,34 @@
   background-color: inherit;
 }
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.title {
+  margin: 0;
+  flex: 1;
+  padding-right: 8px;
+}
+
+.pointsBadge {
+  background-color: #e5b73b; // горчичный
+  color: #000;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.pointsValue {
+  display: inline-block;
+}
+
 .tag {
   background: var(--background-secondary, #f0f0f0);
   padding: 4px 8px;
@@ -57,7 +82,6 @@
   font-size: 14px;
 }
 
-.panelContent :global(.TypographyTitle),
-.panelContent :global(.TypographyBody) {
-  margin: 0 0 4px 0;
+.panelContent :global(.TypographyTitle) {
+  margin: 0;
 }
