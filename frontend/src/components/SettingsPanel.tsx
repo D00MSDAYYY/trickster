@@ -3,16 +3,16 @@ import { Typography, Panel, Switch, Input, IconButton, Flex } from '@maxhub/max-
 
 interface SettingsPanelProps {
   onBack: () => void;
+  company: string; // начальное название компании
 }
 
-export const SettingsPanel = ({ onBack }: SettingsPanelProps) => {
+export const SettingsPanel = ({ onBack, company }: SettingsPanelProps) => {
   const [notifyThreeDays, setNotifyThreeDays] = useState(false);
-  const [companyName, setCompanyName] = useState('');
+  const [companyName, setCompanyName] = useState(company); // инициализация переданным значением
 
-  // Автоматически "сохраняем" при любом изменении
   useEffect(() => {
     console.log('Настройки автоматически обновлены:', { notifyThreeDays, companyName });
-    // Здесь мог бы быть запрос к API
+    // Здесь может быть запрос к API
   }, [notifyThreeDays, companyName]);
 
   return (
@@ -28,17 +28,14 @@ export const SettingsPanel = ({ onBack }: SettingsPanelProps) => {
           overflow: 'hidden',
         }}
       >
-        {/* Заголовок со стрелкой назад и названием */}
         <Flex justify="space-between" align="center" style={{ marginBottom: 20 }}>
           <IconButton mode="tertiary" onClick={onBack}>
             <span style={{ fontSize: 20 }}>←</span>
           </IconButton>
           <Typography.Title variant="medium-strong">Настройки</Typography.Title>
-          {/* Пустой блок для сохранения центрирования заголовка */}
-          <div style={{ width: 48 }} /> {/* примерно ширина иконки */}
+          <div style={{ width: 48 }} />
         </Flex>
 
-        {/* Прокручиваемое содержимое */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto' }}>
           <div>
             <Typography.Title variant="small-strong">Уведомления</Typography.Title>

@@ -5,9 +5,10 @@ import { SettingsPanel } from '../components/SettingsPanel';
 interface ProfilePageProps {
   nickname: string;
   points: number;
+  company:string;
 }
 
-const ProfilePage = ({ nickname, points }: ProfilePageProps) => {
+const ProfilePage = ({ nickname, points,company }: ProfilePageProps) => {
   const [currentView, setCurrentView] = useState<'main' | 'settings'>('main');
 
   if (currentView === 'main') {
@@ -63,7 +64,7 @@ const ProfilePage = ({ nickname, points }: ProfilePageProps) => {
     );
   }
 
-  return <SettingsPanel onBack={() => setCurrentView('main')} />;
+return <SettingsPanel onBack={() => setCurrentView('main')} company={company} />;
 };
 
 export default ProfilePage;

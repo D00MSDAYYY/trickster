@@ -1,0 +1,77 @@
+from models import *
+
+
+sessions_db = {}
+
+registrations_db = [
+    Registration(user_id=1, event_id=1),  # ivanov идёт на конференцию VK
+    Registration(user_id=1, event_id=2),  # ivanov идёт на React мастер-класс
+    Registration(user_id=2, event_id=3),  # petrov идёт на курс по Python
+    Registration(user_id=2, event_id=4),  # petrov идёт на хакатон
+    Registration(user_id=3, event_id=1),  # admin тоже идёт на конференцию
+]
+
+users_db = [
+    User(
+        id=1, nickname="ivanov", points=150, company="ООО Рога и Копыта", password="12"
+    ),
+    User(id=2, nickname="petrov", points=200, company="ЗАО Пример", password="123"),
+    User(id=3, nickname="admin", points=999, company="Администрация", password="1234"),
+]
+
+events_db = [
+    Event(
+        id=1,
+        name="Конференция VK Mini Apps",
+        description="Ежегодная конференция для разработчиков мини-приложений ВКонтакте.",
+        tags=["VK", "Mini Apps", "Разработка"],
+        points=150,
+        date="2025-06-15T10:00",
+        is_archived=False,
+    ),
+    Event(
+        id=2,
+        name="React Advanced: Мастер-класс",
+        description="Углубленный мастер-класс по продвинутым техникам React.",
+        tags=["React", "Frontend", "JavaScript"],
+        points=200,
+        date="2025-06-20T14:00",
+        is_archived=False,
+    ),
+    Event(
+        id=3,
+        name="Python для анализа данных: Базовый курс",
+        description="Введение в Python с акцентом на анализ данных.",
+        tags=["Python", "Data Science", "Аналитика"],
+        points=100,
+        date="2025-07-01T18:00",
+        is_archived=False,
+    ),
+    Event(
+        id=4,
+        name="Хакатон «Код здоровья»",
+        description="Соревнование по созданию IT-решений для медицины.",
+        tags=["Хакатон", "Медицина", "Python"],
+        points=300,
+        date="2025-07-10T09:00",
+        is_archived=False,
+    ),
+    Event(
+        id=5,
+        name="Архивная встреча: Старый Новый Год",
+        description="Давно прошедшее праздничное мероприятие.",
+        tags=["Праздник", "Архив"],
+        points=50,
+        date="2023-01-14T20:00",
+        is_archived=True,
+    ),
+    Event(
+        id=6,
+        name="Архивный воркшоп: Основы Docker",
+        description="Практический воркшоп по контейнеризации.",
+        tags=["Docker", "DevOps", "Архив"],
+        points=120,
+        date="2024-09-01T10:00",
+        is_archived=True,
+    ),
+]

@@ -8,6 +8,7 @@ export interface EventInfo {
   is_registered: boolean;
   points: number;
   date: string;
+  id: number;         // ← добавить
 }
 
 interface EventCardProps {

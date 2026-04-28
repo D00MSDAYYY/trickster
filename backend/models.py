@@ -1,16 +1,19 @@
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime
-import uvicorn
-# ========== Модели данных ==========
+from pydantic import BaseModel # type: ignore
+from typing import Optional, List
+import uuid
+
 
 class User(BaseModel):
     id: int
     nickname: str
-    points: int = 0
-    role: str = "user"  # "user" или "admin"
+    points: int
+    company: Optional[str] = None
+    password: str
+
+
+class LoginRequest(BaseModel):
+    password: str
+
 
 class Event(BaseModel):
     id: int
@@ -18,17 +21,18 @@ class Event(BaseModel):
     description: Optional[str] = None
     tags: List[str] = []
     points: int = 0
-    date: str  # для простоты используем строку (можно заменить на datetime)
-    is_archived: bool = False  # True, если мероприятие прошло
-
-class Notification(BaseModel):
-    id: int
-    title: str
-    body: Optional[str] = None
-    created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
+    date: str  # для простоты используем строку
+    is_archived: bool = False
 
 class Registration(BaseModel):
     user_id: int
     event_id: int
 
-# ========== Имитация базы данных ==========
+
+class EventResponse(BaseModel):
+    id: int
+    name: str
+    tags: List[str] = []
+    points: int = 0
+    date: str
+    is_registered: bool = False
