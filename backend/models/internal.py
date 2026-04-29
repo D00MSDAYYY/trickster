@@ -23,8 +23,9 @@ class Event(BaseModel):
     description: Optional[str] = None
     tags: List[str] = []
     points: int = 0
-    date: str  # для простоты используем строку
+    date: str  
     is_archived: bool = False
+    link: Optional[str] = None    
 
 
 class Registration(BaseModel):

@@ -7,7 +7,7 @@ interface EventInfoDisplayerProps {
 }
 
 export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) => {
-  const { name, description, date, tags, points, is_registered } = event;
+  const { name, description, date, tags, points, is_registered, link } = event;
 
   const formattedDate = new Date(date).toLocaleString('ru-RU', {
     weekday: 'short',
@@ -68,6 +68,18 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
             </div>
           )}
         </Flex>
+        {link && (
+  <a
+    href={link}
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ marginBottom: 16, textDecoration: 'none' }}
+  >
+    <Button mode="secondary" stretched>
+      🔗 Перейти к мероприятию
+    </Button>
+  </a>
+)}
 
         <Button mode="primary" onClick={onBack} style={{ marginTop: 'auto' }}>
           Назад к списку

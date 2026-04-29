@@ -18,7 +18,9 @@ export const EventCard = ({
 }: EventCardProps) => {
   const { name, tags, is_registered, points, date } = eventInfo;
 
-  const SWIPE_THRESHOLD = 100;
+  const SWIPE_THRESHOLD = 65;
+  const SWIPE_FACTOR = 0.3;
+
   const [offsetX, setOffsetX] = useState(0);
   const [isPressed, setIsPressed] = useState(false);
 
@@ -54,7 +56,7 @@ export const EventCard = ({
   const handleMove = useCallback((clientX: number) => {
     if (!isDraggingRef.current) return;
     const diff = clientX - startXRef.current;
-    let newOffset = currentOffsetRef.current + diff;
+    let newOffset = currentOffsetRef.current + diff * SWIPE_FACTOR;
     newOffset = Math.min(150, Math.max(newOffset, -150));
     setOffsetX(newOffset);
   }, []);

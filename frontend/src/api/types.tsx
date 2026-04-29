@@ -1,8 +1,9 @@
-// src/api/types.ts
 export interface UserProfile {
   nickname: string;
   points: number;
+  role: string;
   company?: string;
+  
 }
 
 export interface EventItem {
@@ -16,6 +17,7 @@ export interface EventItem {
 
 export interface EventDetail extends EventItem {
   description?: string;
+  link?: string;
 }
 
 export interface NotificationItem {

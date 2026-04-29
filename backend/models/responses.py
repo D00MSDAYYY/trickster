@@ -2,6 +2,12 @@ from pydantic import BaseModel  # type: ignore
 from typing import Optional, List
 
 
+class UserResponse(BaseModel):
+    nickname: str
+    points: int
+    company: Optional[str] = None
+    role: str = "user"  
+
 class EventResponse(BaseModel):
     id: int
     name: str
@@ -19,6 +25,7 @@ class EventDetailResponse(BaseModel):
     points: int = 0
     date: str
     is_registered: bool = False
+    link: Optional[str] = None    
 
 
 class NotificationResponse(BaseModel):

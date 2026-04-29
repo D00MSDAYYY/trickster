@@ -64,7 +64,7 @@ const Layout = ({ user }: { user: UserProfile }) => {
           <div style={{ padding: 16 }}>
             {currentPage === 'admin' && <AdminPage />}
             {currentPage === 'profile' && (
-              <ProfilePage nickname={user.nickname} points={user.points} company={user.company}/>
+              <ProfilePage nickname={user.nickname} points={user.points} company={user.company} />
             )}
             {currentPage === 'home' && <EventsPage />}
             {currentPage === 'notifications' && <NotificationsPage />}
@@ -79,18 +79,20 @@ const Layout = ({ user }: { user: UserProfile }) => {
           alignItems: 'stretch',       // чтобы кнопки растягивались на всю высоту
           boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.15)'
         }}>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <IconButton
-              onClick={handleAdminClick}
-              style={{
-                width: '100%',
-                height: '100%',         // кнопка занимает всю высоту футера
-                ...(currentPage === 'admin' ? activeButtonStyle : {})
-              }}
-            >
-              <AdminIcon />
-            </IconButton>
-          </div>
+          {user.role === 'admin' && (
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+              <IconButton
+                onClick={handleAdminClick}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  ...(currentPage === 'admin' ? activeButtonStyle : {})
+                }}
+              >
+                <AdminIcon />
+              </IconButton>
+            </div>
+          )}
 
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <IconButton

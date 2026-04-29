@@ -64,12 +64,7 @@ async def login(login_data: LoginRequest, response: Response):
         path="/",  # обязательно укажите корневой путь
         max_age=60 * 60 * 24,  # время жизни 24 часа
     )
-    return {
-        "id": user.id,
-        "nickname": user.nickname,
-        "points": user.points,
-        "company": user.company,
-    }
+    return UserResponse(**user.model_dump())
 
 
 @app.post("/logout")
@@ -84,11 +79,7 @@ async def logout(request: Request, response: Response):
 @app.get("/profile")
 async def get_profile(user: User = Depends(get_current_user)):
     """Возвращает профиль текущего авторизованного пользователя."""
-    return {
-        "nickname": user.nickname,
-        "points": user.points,
-        "company": user.company,
-    }
+    return UserResponse(**user.model_dump())
 
 
 @app.get("/events", response_model=List[EventResponse])
@@ -130,6 +121,7 @@ async def get_event_detail(event_id: int, user: User = Depends(get_current_user)
         points=event.points,
         date=event.date,
         is_registered=registered,
+        link=event.link,
     )
 
 
@@ -160,6 +152,42 @@ async def get_archived_events(admin: User = Depends(ensure_admin)):
         )
         for e in archived
     ]
+
+
+@app.post("/events/{event_id}/register")
+async def register_for_event(event_id: int, user: User = Depends(get_current_user)):
+    """Зарегистрировать текущего пользователя на событие."""
+    event = next((e for e in events_db if e.id == event_id), None)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    if event.is_archived:
+        raise HTTPException(
+            status_code=400, detail="Нельзя зарегистрироваться на прошедшее событие"
+        )
+    if any(r.user_id == user.id and r.event_id == event_id for r in registrations_db):
+        raise HTTPException(status_code=409, detail="Вы уже зарегистрированы")
+    registrations_db.append(Registration(user_id=user.id, event_id=event_id))
+    return {"message": f"Вы зарегистрированы на событие '{event.name}'"}
+
+
+@app.delete("/events/{event_id}/register")
+async def unregister_from_event(event_id: int, user: User = Depends(get_current_user)):
+    """Отменить регистрацию текущего пользователя."""
+    event = next((e for e in events_db if e.id == event_id), None)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    reg = next(
+        (
+            r
+            for r in registrations_db
+            if r.user_id == user.id and r.event_id == event_id
+        ),
+        None,
+    )
+    if not reg:
+        raise HTTPException(status_code=404, detail="Регистрация не найдена")
+    registrations_db.remove(reg)
+    return {"message": f"Регистрация на событие '{event.name}' отменена"}
 
 
 if __name__ == "__main__":

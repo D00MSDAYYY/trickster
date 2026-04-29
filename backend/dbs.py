@@ -10,7 +10,7 @@ notifications_db = [
         id=1,
         title="Конференция уже завтра!",
         body="Не забудьте посетить конференцию VK Mini Apps завтра в 10:00.",
-        created_at=(datetime.now() - timedelta(hours=2)).isoformat(),
+        created_at=(datetime.now() - timedelta(hours=2)).isoformat()
     ),
     Notification(
         id=2,
@@ -68,6 +68,7 @@ events_db = [
         points=150,
         date="2025-06-15T10:00",
         is_archived=False,
+        link="https://google.com"
     ),
     Event(
         id=2,
@@ -76,7 +77,9 @@ events_db = [
         tags=["React", "Frontend", "JavaScript"],
         points=200,
         date="2025-06-20T14:00",
-        is_archived=False,
+        is_archived=False
+        ,
+        link="https://ya.ru"
     ),
     Event(
         id=3,
@@ -86,6 +89,8 @@ events_db = [
         points=100,
         date="2025-07-01T18:00",
         is_archived=False,
+        
+        link="https://vk.ru"
     ),
     Event(
         id=4,
@@ -95,6 +100,7 @@ events_db = [
         points=300,
         date="2025-07-10T09:00",
         is_archived=False,
+        link="https://1tv.ru"
     ),
     Event(
         id=5,
@@ -103,7 +109,8 @@ events_db = [
         tags=["Праздник", "Архив"],
         points=50,
         date="2023-01-14T20:00",
-        is_archived=True,
+        is_archived=False,
+        link="https://arm.com"
     ),
     Event(
         id=6,
@@ -112,6 +119,56 @@ events_db = [
         tags=["Docker", "DevOps", "Архив"],
         points=120,
         date="2024-09-01T10:00",
-        is_archived=True,
+        is_archived=False
+        ,
+        link="https://microsoft.com"
+    ),
+    
+    Event(
+        id=7,
+        name="r",
+        description="Практический воркшоп по контейнеризации.",
+        tags=["Docker", "DevOps", "Архив"],
+        points=120,
+        date="2024-09-01T10:00",
+        is_archived=False
+        ,
+        link="https://microsoft.com"
+    ),
+    
+    Event(
+        id=8,
+        name="e",
+        description="Практический воркшоп по контейнеризации.",
+        tags=["Docker", "DevOps", "Архив"],
+        points=120,
+        date="2024-09-01T10:00",
+        is_archived=False
+        ,
+        link="https://microsoft.com"
+    ),
+    
+    Event(
+        id=9,
+        name="w",
+        description="Практический воркшоп по контейнеризации.",
+        tags=["Docker", "DevOps", "Архив"],
+        points=120,
+        date="2024-09-01T10:00",
+        is_archived=False
+        ,
+        link="https://microsoft.com"
+    ),
+    
+    Event(
+        id=10,
+        name="q",
+        description="Практический воркшоп по контейнеризации.",
+        tags=["Docker", "DevOps", "Архив"],
+        points=120,
+        date="2024-09-01T10:00",
+        is_archived=False
+        ,
+        link="https://microsoft.com"
     ),
 ]
