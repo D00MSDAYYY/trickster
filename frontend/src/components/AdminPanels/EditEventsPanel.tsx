@@ -238,7 +238,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
                   >
                     {formatDate(event.date)}
                   </Typography.Body>
-                  <Flex gap={8} style={{ flexShrink: 0 }}>
+                  <Flex direction="column" gap={4} style={{ flexShrink: 0 }}>
                     {/* Кнопка посетителей */}
                     <Button
                       mode="tertiary"
