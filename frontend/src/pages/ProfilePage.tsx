@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Typography, Panel, CellList, CellSimple, Flex } from '@maxhub/max-ui';
 import { SettingsPanel } from '../components/SettingsPanel';
+import { UserProfile } from '../api/types';
+
 
 interface ProfilePageProps {
-  nickname: string;
-  points: number;
-  company?: string;
+  user: UserProfile;
+
 }
 
-const ProfilePage = ({ nickname, points, company }: ProfilePageProps) => {
+const ProfilePage = ({ user }: ProfilePageProps) => {
   const [currentView, setCurrentView] = useState<'main' | 'settings'>('main');
 
   if (currentView === 'main') {
@@ -18,7 +19,7 @@ const ProfilePage = ({ nickname, points, company }: ProfilePageProps) => {
         <Flex justify="space-between" align="center" style={{ marginBottom: 16, padding: '0 4px' }}>
           <Flex align="center" gap={12}>
             <Typography.Body style={{ fontSize: 16, fontWeight: 500 }}>
-              @{nickname}
+              @{user.nickname}
             </Typography.Body>
           </Flex>
           <div style={{
@@ -32,7 +33,7 @@ const ProfilePage = ({ nickname, points, company }: ProfilePageProps) => {
             whiteSpace: 'nowrap',
             border: '1px solid rgba(0,0,0,0.1)',
           }}>
-            🏆 {points}
+            🏆 {user.points}
           </div>
         </Flex>
 
@@ -64,7 +65,7 @@ const ProfilePage = ({ nickname, points, company }: ProfilePageProps) => {
     );
   }
 
-  return <SettingsPanel onBack={() => setCurrentView('main')} company={company} />;
+  return <SettingsPanel onBack={() => setCurrentView('main')} user={user} />;
 };
 
 export default ProfilePage;

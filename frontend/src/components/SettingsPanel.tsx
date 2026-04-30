@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Typography, Panel, Switch, Input, IconButton, Flex } from '@maxhub/max-ui';
+import { UserProfile } from '../api/types';
 
 interface SettingsPanelProps {
   onBack: () => void;
-  company?: string; // начальное название компании
+  user: UserProfile; // начальное название компании
 }
 
-export const SettingsPanel = ({ onBack, company }: SettingsPanelProps) => {
+export const SettingsPanel = ({ onBack, user }: SettingsPanelProps) => {
   const [notifyThreeDays, setNotifyThreeDays] = useState(false);
-  const [companyName, setCompanyName] = useState(company); // инициализация переданным значением
+  const [companyName, setCompanyName] = useState(user.company); // инициализация переданным значением
 
   useEffect(() => {
     console.log('Настройки автоматически обновлены:', { notifyThreeDays, companyName });
-    // Здесь может быть запрос к API
   }, [notifyThreeDays, companyName]);
 
   return (

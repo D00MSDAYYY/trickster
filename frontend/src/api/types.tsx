@@ -1,9 +1,8 @@
 export interface UserProfile {
   nickname: string;
   points: number;
-  role: string;
-  company?: string;
-
+  role: string;            // 'user' или 'admin'
+  company?: string | null; // может отсутствовать или быть null
 }
 
 export interface EventItem {
@@ -12,18 +11,14 @@ export interface EventItem {
   tags: string[];
   points: number;
   date: string;
-  is_registered: boolean;
   is_archived: boolean;
-}
-
-export interface EventDetail extends EventItem {
+  is_registered?: boolean | null; // необязательно, вычисляется на сервере
   description?: string | null;
   link?: string | null;
 }
-
 export interface NotificationItem {
   id: number;
   title: string;
+  body?: string | null;
   created_at: string;
-  body?: string;
 }

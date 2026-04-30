@@ -2,15 +2,10 @@ import { useState, useEffect } from 'react';
 import { MaxUI } from '@maxhub/max-ui';
 import Layout from './components/Layout';
 import LoginScreen from './components/LoginScreen';
-
-export interface UserData {
-  nickname: string;
-  points: number;
-  company: string;
-}
+import { UserProfile } from './api/types';
 
 function App() {
-  const [user, setUser] = useState<UserData | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [checking, setChecking] = useState(true);
 
   // Функция проверки сессии
@@ -41,7 +36,7 @@ function App() {
 
   if (checking) {
     return (
-      <MaxUI platform="ios" colorScheme="light">
+      <MaxUI colorScheme="light">
         <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           Проверка сессии...
         </div>
@@ -51,14 +46,14 @@ function App() {
 
   if (!user) {
     return (
-      <MaxUI platform="ios" colorScheme="light">
+      <MaxUI colorScheme="light">
         <LoginScreen onLogin={(userData) => setUser(userData)} />
       </MaxUI>
     );
   }
 
   return (
-    <MaxUI platform="ios" colorScheme="light">
+    <MaxUI colorScheme="light">
       <Layout user={user} />
     </MaxUI>
   );

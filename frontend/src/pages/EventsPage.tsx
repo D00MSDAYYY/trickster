@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { EventCard } from '../components/EventCard/EventCard';
 import { EventInfoDisplayer } from '../components/EventInfoDisplayer';
-import type { EventItem, EventDetail } from '../api/types';
+import type { EventItem } from '../api/types';
 
 const EventsPage = () => {
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<EventDetail | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -31,7 +31,7 @@ const EventsPage = () => {
 
   const handleMoreClick = async (eventId: number) => {
     const res = await fetch(`/api/events/${eventId}`, { credentials: 'include' });
-    const detail: EventDetail = await res.json();
+    const detail: EventItem = await res.json();
     setSelectedEvent(detail);
   };
 

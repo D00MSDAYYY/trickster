@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Typography, Panel, Flex, IconButton, Button } from '@maxhub/max-ui';
 import { EventFormPanel } from './EventFormPanel';
-import type { EventItem, EventDetail } from '../../api/types';
+import type { EventItem } from '../../api/types';
 
 const formatDate = (dateStr: string) => {
   try {
@@ -21,7 +21,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'list' | 'create' | 'edit'>('list');
-  const [editingEvent, setEditingEvent] = useState<EventDetail | null>(null);
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
 
   const fetchEvents = async () => {
     try {
@@ -58,7 +58,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
   const handleEditClick = (event: EventItem) => {
     fetch(`/api/events/${event.id}`, { credentials: 'include' })
       .then(res => res.json())
-      .then((detail: EventDetail) => {
+      .then((detail: EventItem) => {
         setEditingEvent(detail);
         setCurrentView('edit');
       });

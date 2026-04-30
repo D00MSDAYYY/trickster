@@ -1,8 +1,8 @@
 import { Panel, Typography, Button, Flex } from '@maxhub/max-ui';
-import type { EventItem, EventDetail } from '../api/types';
+import type { EventItem } from '../api/types';
 
 interface EventInfoDisplayerProps {
-  event: EventDetail;
+  event: EventItem;
   onBack: () => void;
 }
 
@@ -76,7 +76,7 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
     style={{ marginBottom: 16, textDecoration: 'none' }}
   >
     <Button mode="secondary" stretched>
-      🔗 Перейти к мероприятию
+      🔗 Ссылка на мероприятие
     </Button>
   </a>
 )}

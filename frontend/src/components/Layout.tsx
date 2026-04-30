@@ -7,20 +7,26 @@ import AdminPage from '../pages/AdminPage';
 import type { UserProfile } from '../api/types';
 
 
-const AdminIcon = () => <span style={{ fontSize: 24 }}>🔧</span>;
-const AccountIcon = () => <span style={{ fontSize: 24 }}>👤</span>;
-const NotificationsIcon = () => <span style={{ fontSize: 24 }}>🔔</span>;
-const EventIcon = () => <span style={{ fontSize: 24 }}>🎉</span>;
 
-const Layout = ({ user }: { user: UserProfile }) => {
+
+
+interface LayoutProps {
+  user: UserProfile;
+}
+
+const Layout = ({ user }: LayoutProps) => {
   const [currentPage, setCurrentPage] = useState('home');
-
   const handleEventClick = () => setCurrentPage('home');
   const handleProfileClick = () => setCurrentPage('profile');
   const handleNotificationsClick = () => {
     setCurrentPage('notifications');
   };
   const handleAdminClick = () => setCurrentPage('admin');
+
+  const AdminIcon = () => <span style={{ fontSize: 24 }}>🔧</span>;
+  const AccountIcon = () => <span style={{ fontSize: 24 }}>👤</span>;
+  const NotificationsIcon = () => <span style={{ fontSize: 24 }}>🔔</span>;
+  const EventIcon = () => <span style={{ fontSize: 24 }}>🎉</span>;
 
   const activeButtonStyle = {
     filter: 'brightness(0.85)',
@@ -64,7 +70,7 @@ const Layout = ({ user }: { user: UserProfile }) => {
           <div style={{ padding: 16 }}>
             {currentPage === 'admin' && <AdminPage />}
             {currentPage === 'profile' && (
-              <ProfilePage nickname={user.nickname} points={user.points} company={user.company} />
+              <ProfilePage user={user} />
             )}
             {currentPage === 'home' && <EventsPage />}
             {currentPage === 'notifications' && <NotificationsPage />}

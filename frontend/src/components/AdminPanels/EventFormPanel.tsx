@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Typography, Panel, Flex, Button, Input, Switch } from '@maxhub/max-ui';
-import type { EventDetail } from '../../api/types';
+import type { EventItem } from '../../api/types';
 import TagSelector from './TagSelector/TagSelector'
 
 interface EventFormPanelProps {
-    initial?: Partial<EventDetail>;
+    initial?: Partial<EventItem>;
     onSave: (data: Record<string, any>) => void;
     onCancel: () => void;
 }
