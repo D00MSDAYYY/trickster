@@ -1,21 +1,37 @@
 import { useState } from 'react';
-import { Typography, Panel, CellList, CellSimple, Flex } from '@maxhub/max-ui';
+import { Typography, Panel, CellList, CellSimple, Flex, Button } from '@maxhub/max-ui';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { UserProfile } from '../api/types';
 
-
 interface ProfilePageProps {
   user: UserProfile;
-
+  onLogout?: () => void;  // если решите передавать, но не обязательно
 }
 
 const ProfilePage = ({ user }: ProfilePageProps) => {
   const [currentView, setCurrentView] = useState<'main' | 'settings'>('main');
 
+  const handleLogout = async () => {
+    console.log('Нажата кнопка Выйти'); // <-- добавьте это для проверки в консоли
+    try {
+      const res = await fetch('api/logout', { method: 'POST', credentials: 'include' });
+      console.log('Ответ сервера:', res.status); // посмотрим статус
+      if (!res.ok) {
+        console.error('Сервер вернул ошибку', res.status);
+      }
+    } catch (err) {
+      console.error('Ошибка fetch:', err);
+    }
+
+    // Гарантированно удаляем куку на клиенте
+    document.cookie = 'session_id=; Max-Age=0; path=/';
+    console.log('Кука удалена, перезагружаем...');
+    window.location.reload();
+  };
+
   if (currentView === 'main') {
     return (
       <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        {/* Блок с информацией о пользователе — вне панели */}
         <Flex justify="space-between" align="center" style={{ marginBottom: 16, padding: '0 4px' }}>
           <Flex align="center" gap={12}>
             <Typography.Body style={{ fontSize: 16, fontWeight: 500 }}>
@@ -37,7 +53,6 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
           </div>
         </Flex>
 
-        {/* Панель со списком действий */}
         <Panel
           mode="primary"
           style={{
@@ -51,15 +66,19 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
         >
           <div style={{ flex: 1, overflowY: 'auto' }}>
             <CellList>
-              <CellSimple
-                title="Настройки"
-                showChevron
-                onClick={() => setCurrentView('settings')}
-              />
+              <CellSimple title="Настройки" showChevron onClick={() => setCurrentView('settings')} />
               <CellSimple title="Архив мероприятий" showChevron />
               <CellSimple title="О приложении" showChevron />
             </CellList>
           </div>
+          <Button
+            mode="tertiary"
+            stretched
+            onClick={handleLogout}
+            style={{ color: '#d32f2f', fontSize: 16, fontWeight: 500, marginTop: 8 }}
+          >
+            Выйти
+          </Button>
         </Panel>
       </div>
     );

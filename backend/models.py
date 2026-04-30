@@ -21,7 +21,7 @@ class User(BaseModel):
 
 
 class Event(BaseModel):
-    id: int
+    id: Optional[int] = None
     name: str
     tags: List[str] = []
     points: int = 0
@@ -56,3 +56,12 @@ class Tag(BaseModel):
 class ProfileUpdate(BaseModel):
     company: Optional[str] = None
     notify_three_days: Optional[bool] = None
+
+
+class Attendance(BaseModel):
+    user_id: int
+    event_id: int
+
+class UserSearchItem(BaseModel):
+    id: int
+    nickname: str

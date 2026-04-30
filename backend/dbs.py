@@ -1,32 +1,65 @@
 from datetime import datetime, timedelta
 from models import *
 
+
+attendants_db: List[Attendance] = []
 # ========== Пользователи ==========
 users_db = [
     User(
         id=1,
+        nickname="admin",
+        points=999,
+        company="Администрация",
+        password="1",
+        role=Roles.admin,
+    ),
+    User(
+        id=2,
         nickname="ivanov",
         points=150,
-        company="ООО Рога и Копыта",
+        company="Росагро",
         password="12",
         role=Roles.user,
     ),
     User(
-        id=2,
+        id=3,
         nickname="petrov",
         points=200,
-        company="ЗАО Пример",
+        company="Роскосмос",
         password="123",
         role=Roles.user,
     ),
     User(
-        id=3,
-        nickname="admin",
-        points=999,
-        company="Администрация",
+        id=4,
+        nickname="sidorov",
+        points=22,
         password="1234",
-        role=Roles.admin,
+        role=Roles.user,
     ),
+    User(
+        id=5,
+        nickname="zaycev",
+        points=22,
+        password="12345",
+        role=Roles.user,
+    ),
+    User(
+        id=6,
+        nickname="demidov",
+        points=22,
+        company="Росатом",
+        password="123456",
+        role=Roles.user,
+    ),
+    User(
+        id=7,
+        nickname="nuriev",
+        points=22,
+        company="АМС",
+        password="1234567",
+        role=Roles.user,
+    ),
+    
 ]
 
 # ========== События ==========

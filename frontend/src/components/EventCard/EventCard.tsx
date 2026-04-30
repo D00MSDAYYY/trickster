@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Panel, Typography, Flex } from '@maxhub/max-ui';
-import styles from './EventCard.module.scss'
+import styles from './EventCard.module.scss';
 import type { EventItem } from '../../api/types';
 
 interface EventCardProps {
@@ -25,9 +25,15 @@ export const EventCard = ({
   const [isPressed, setIsPressed] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const startXRef = useRef<number>(0);
-  const currentOffsetRef = useRef<number>(0);
-  const isDraggingRef = useRef<boolean>(false);
+  const startXRef = useRef(0);
+  const offsetXRef = useRef(0);            // актуальное смещение
+  const isDraggingRef = useRef(false);
+
+  // Сохраняем актуальные колбэки, чтобы не привязываться к перерисовкам
+  const callbacksRef = useRef({ onRegisterSwapped, onUnregisterSwapped });
+  useEffect(() => {
+    callbacksRef.current = { onRegisterSwapped, onUnregisterSwapped };
+  }, [onRegisterSwapped, onUnregisterSwapped]);
 
   const formatEventDate = (dateStr: string) => {
     try {
@@ -44,11 +50,10 @@ export const EventCard = ({
       return dateStr;
     }
   };
-  const formattedDate = formatEventDate(date);
 
   const handleStart = useCallback((clientX: number) => {
     startXRef.current = clientX;
-    currentOffsetRef.current = offsetX;
+    offsetXRef.current = offsetX;   // начальное смещение (обычно 0)
     isDraggingRef.current = true;
     setIsPressed(true);
   }, [offsetX]);
@@ -56,8 +61,9 @@ export const EventCard = ({
   const handleMove = useCallback((clientX: number) => {
     if (!isDraggingRef.current) return;
     const diff = clientX - startXRef.current;
-    let newOffset = currentOffsetRef.current + diff * SWIPE_FACTOR;
+    let newOffset = offsetXRef.current + diff * SWIPE_FACTOR;
     newOffset = Math.min(150, Math.max(newOffset, -150));
+    offsetXRef.current = newOffset;   // синхронно обновляем ref
     setOffsetX(newOffset);
   }, []);
 
@@ -66,18 +72,22 @@ export const EventCard = ({
     isDraggingRef.current = false;
     setIsPressed(false);
 
-    const swipedLeft = offsetX < -SWIPE_THRESHOLD;
-    const swipedRight = offsetX > SWIPE_THRESHOLD;
+    const finalOffset = offsetXRef.current;   // берём актуальное смещение
+    const swipedLeft = finalOffset < -SWIPE_THRESHOLD;
+    const swipedRight = finalOffset > SWIPE_THRESHOLD;
 
     if (swipedLeft && !is_registered) {
-      onRegisterSwapped();
+      callbacksRef.current.onRegisterSwapped();
     } else if (swipedRight && is_registered) {
-      onUnregisterSwapped();
+      callbacksRef.current.onUnregisterSwapped();
     }
 
+    // Сброс после обработки
+    offsetXRef.current = 0;
     setOffsetX(0);
-  }, [offsetX, is_registered, onRegisterSwapped, onUnregisterSwapped]);
+  }, [is_registered]);
 
+  // Touch‑обработчики
   const touchHandlers = {
     onTouchStart: (e: React.TouchEvent) => handleStart(e.touches[0].clientX),
     onTouchMove: (e: React.TouchEvent) => handleMove(e.touches[0].clientX),
@@ -85,21 +95,21 @@ export const EventCard = ({
     onTouchCancel: handleEnd,
   };
 
-  const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
-  const onMouseUp = () => {
-    handleEnd();
-    window.removeEventListener('mousemove', onMouseMove);
-    window.removeEventListener('mouseup', onMouseUp);
-  };
+  // Mouse‑обработчики с корректной подпиской/отпиской
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    handleStart(e.clientX);
 
-  const mouseHandlers = {
-    onMouseDown: (e: React.MouseEvent) => {
-      e.preventDefault();
-      handleStart(e.clientX);
-      window.addEventListener('mousemove', onMouseMove);
-      window.addEventListener('mouseup', onMouseUp);
-    },
-  };
+    const onMouseMove = (ev: MouseEvent) => handleMove(ev.clientX);
+    const onMouseUp = () => {
+      handleEnd();
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }, [handleStart, handleMove, handleEnd]);
 
   const topSectionStyle = {
     transform: `translateX(${offsetX}px)`,
@@ -118,7 +128,7 @@ export const EventCard = ({
       ref={containerRef}
       className={styles.container}
       {...touchHandlers}
-      {...mouseHandlers}
+      onMouseDown={onMouseDown}
     >
       <div className={styles.bottomPanel} />
 
@@ -143,7 +153,6 @@ export const EventCard = ({
               </span>
             ))}
           </Flex>
-          {/* Дата теперь в потоке, прижата к правому краю и имеет автоматический отступ сверху */}
           <div className={styles.dateWrapper}>
             <span className={styles.date}>🗓️ {formatEventDate(date)}</span>
           </div>

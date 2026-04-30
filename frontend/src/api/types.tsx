@@ -23,3 +23,8 @@ export interface NotificationItem {
   body?: string | null;
   created_at: string;
 }
+
+export interface UserSearchItem {
+  id: number;
+  nickname: string;
+}
