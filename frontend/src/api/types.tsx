@@ -1,8 +1,9 @@
 export interface UserProfile {
   nickname: string;
   points: number;
-  role: string;            // 'user' или 'admin'
-  company?: string | null; // может отсутствовать или быть null
+  role: string;
+  company?: string | null;
+  notify_three_days?: boolean;
 }
 
 export interface EventItem {

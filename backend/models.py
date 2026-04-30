@@ -17,6 +17,7 @@ class User(BaseModel):
     company: Optional[str] = None
     password: str
     role: Roles = Roles.user
+    notify_three_days: bool = False
 
 
 class Event(BaseModel):
@@ -50,3 +51,8 @@ class Registration(BaseModel):
 class Tag(BaseModel):
     id: int
     name: str
+
+
+class ProfileUpdate(BaseModel):
+    company: Optional[str] = None
+    notify_three_days: Optional[bool] = None

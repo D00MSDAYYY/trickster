@@ -1,19 +1,42 @@
-import { useState, useEffect } from 'react';
-import { Typography, Panel, Switch, Input, IconButton, Flex } from '@maxhub/max-ui';
-import { UserProfile } from '../api/types';
+import { useState } from 'react';
+import { Typography, Panel, Switch, Input, IconButton, Flex, Button } from '@maxhub/max-ui';
+import type { UserProfile } from '../api/types';
 
 interface SettingsPanelProps {
   onBack: () => void;
-  user: UserProfile; // начальное название компании
+  user: UserProfile;
 }
 
 export const SettingsPanel = ({ onBack, user }: SettingsPanelProps) => {
-  const [notifyThreeDays, setNotifyThreeDays] = useState(false);
-  const [companyName, setCompanyName] = useState(user.company); // инициализация переданным значением
+  // Инициализируем состояния из переданного объекта user
+  const [notifyThreeDays, setNotifyThreeDays] = useState(user.notify_three_days ?? false);
+  const [companyName, setCompanyName] = useState(user.company ?? '');
 
-  useEffect(() => {
-    console.log('Настройки автоматически обновлены:', { notifyThreeDays, companyName });
-  }, [notifyThreeDays, companyName]);
+  const handleSave = async () => {
+    try {
+      const body = {
+        company: companyName,
+        notify_three_days: notifyThreeDays,
+      };
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        console.error('Ошибка сохранения:', error.detail);
+        return;
+      }
+      // Обновляем все поля локального объекта user тем, что вернул сервер (или просто присваиваем)
+      const updatedUser: UserProfile = await res.json();
+      Object.assign(user, updatedUser);
+      console.log('Профиль обновлён');
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -60,6 +83,12 @@ export const SettingsPanel = ({ onBack, user }: SettingsPanelProps) => {
               />
             </Panel>
           </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <Button mode="primary" stretched onClick={handleSave}>
+            Сохранить
+          </Button>
         </div>
       </Panel>
     </div>

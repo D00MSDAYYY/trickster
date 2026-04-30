@@ -131,6 +131,42 @@ async def get_archived_events(admin: User = Depends(ensure_admin)):
     return [e for e in events_db if e.is_archived]
 
 
+@app.post("/events/{event_id}/register")
+async def register_for_event(event_id: int, user: User = Depends(get_current_user)):
+    """Зарегистрировать текущего пользователя на событие."""
+    event = next((e for e in events_db if e.id == event_id), None)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    if event.is_archived:
+        raise HTTPException(
+            status_code=400, detail="Нельзя зарегистрироваться на прошедшее событие"
+        )
+    if any(r.user_id == user.id and r.event_id == event_id for r in registrations_db):
+        raise HTTPException(status_code=409, detail="Вы уже зарегистрированы")
+    registrations_db.append(Registration(user_id=user.id, event_id=event_id))
+    return {"message": f"Вы зарегистрированы на событие '{event.name}'"}
+
+
+@app.delete("/events/{event_id}/register")
+async def unregister_from_event(event_id: int, user: User = Depends(get_current_user)):
+    """Отменить регистрацию текущего пользователя."""
+    event = next((e for e in events_db if e.id == event_id), None)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+    reg = next(
+        (
+            r
+            for r in registrations_db
+            if r.user_id == user.id and r.event_id == event_id
+        ),
+        None,
+    )
+    if not reg:
+        raise HTTPException(status_code=404, detail="Регистрация не найдена")
+    registrations_db.remove(reg)
+    return {"message": f"Регистрация на событие '{event.name}' отменена"}
+
+
 @app.post("/admin/events", response_model=Event)
 async def create_event(event_data: Event, admin: User = Depends(ensure_admin)):
     """Создать новое событие."""
@@ -161,6 +197,19 @@ async def update_event(
         setattr(event, field, value)
 
     return event
+
+
+
+@app.patch("/profile")
+async def update_profile(
+    profile_data: ProfileUpdate,
+    user: User = Depends(get_current_user)
+):
+    if profile_data.company is not None:
+        user.company = profile_data.company
+    if profile_data.notify_three_days is not None:
+        user.notify_three_days = profile_data.notify_three_days
+    return user
 
 
 if __name__ == "__main__":
