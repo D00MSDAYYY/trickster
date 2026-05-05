@@ -1,0 +1,1 @@
+./sh/generate_ts.sh  /Users/killroy/Desktop/code/my_projects/hameln/backend/models/external.py  /Users/killroy/Desktop/code/my_projects/hameln/frontend/src/api/types.tsx

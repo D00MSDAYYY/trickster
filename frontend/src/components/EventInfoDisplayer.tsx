@@ -1,13 +1,13 @@
 import { Panel, Typography, Button, Flex } from '@maxhub/max-ui';
-import type { EventItem } from '../api/types';
+import type { TagInfoResponse, EventInfoResponse } from '../api/types';
 
 interface EventInfoDisplayerProps {
-  event: EventItem;
+  event: EventInfoResponse;
   onBack: () => void;
 }
 
 export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) => {
-  const { name, description, date, tags, points, is_registered, link } = event;
+  const { title, description, date, tags, points, is_registered, link } = event;
 
   const formattedDate = new Date(date).toLocaleString('ru-RU', {
     weekday: 'short',
@@ -30,10 +30,14 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
           overflow: 'hidden',
         }}
       >
-        <Typography.Title variant="large-strong" style={{ marginBottom: 16 }}>
-          {name}
-        </Typography.Title>
-
+        <div style={{ marginBottom: 16 }}>
+          <Typography.Title variant="large-strong" style={{ marginBottom: 8 }}>
+            {title}
+          </Typography.Title>
+          <Typography.Body style={{ color: 'var(--text-secondary)' }}>
+            {formattedDate}
+          </Typography.Body>
+        </div>
 
         {description && (
           <Typography.Body style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
@@ -42,16 +46,26 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
         )}
 
         <Flex gap={8} wrap="wrap" style={{ marginBottom: 16 }}>
-          {tags.map((tag, idx) => (
+          {tags.map((tag: TagInfoResponse, idx) => (
             <span key={idx} style={{
               background: 'var(--background-secondary, #f0f0f0)',
               padding: '4px 8px',
               borderRadius: 8,
               fontSize: 14,
             }}>
-              🏷️ {tag}
+              🏷️ {tag.name}
             </span>
           ))}
+          {points > 0 && (
+            <span style={{
+              background: 'var(--background-secondary, #f0f0f0)',
+              padding: '4px 8px',
+              borderRadius: 8,
+              fontSize: 14,
+            }}>
+              ⭐ {points} баллов
+            </span>
+          )}
         </Flex>
 
         <Flex align="center" gap={8} style={{ marginBottom: 16 }}>
@@ -68,18 +82,19 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
             </div>
           )}
         </Flex>
+
         {link && (
-  <a
-    href={link}
-    target="_blank"
-    rel="noopener noreferrer"
-    style={{ marginBottom: 16, textDecoration: 'none' }}
-  >
-    <Button mode="secondary" stretched>
-      🔗 Ссылка на мероприятие
-    </Button>
-  </a>
-)}
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ marginBottom: 16, textDecoration: 'none' }}
+          >
+            <Button mode="secondary" stretched>
+              🔗 Ссылка на мероприятие
+            </Button>
+          </a>
+        )}
 
         <Button mode="primary" onClick={onBack} style={{ marginTop: 'auto' }}>
           Назад к списку

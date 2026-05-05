@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Input, Panel, Flex, Typography } from '@maxhub/max-ui';
-import type { Tag } from '../../api/types';
+import type { TagInfoResponse } from '../../api/types';
 import styles from './TagSelector.module.scss';
 
 interface TagSelectorProps {
@@ -9,7 +9,7 @@ interface TagSelectorProps {
 }
 
 export const TagSelector = ({ selected, onChange }: TagSelectorProps) => {
-  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [allTags, setAllTags] = useState<TagInfoResponse[]>([]);
   const [filter, setFilter] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,7 +17,7 @@ export const TagSelector = ({ selected, onChange }: TagSelectorProps) => {
   useEffect(() => {
     fetch('/api/tags', { credentials: 'include' })
       .then(res => res.json())
-      .then((data: Tag[]) => setAllTags(data))
+      .then((data: TagInfoResponse[]) => setAllTags(data))
       .catch(console.error);
   }, []);
 
@@ -71,7 +71,7 @@ export const TagSelector = ({ selected, onChange }: TagSelectorProps) => {
       </div>
       {showDropdown && filteredTags.length > 0 && (
         <Panel mode="secondary" className={styles.dropdown}>
-          {filteredTags.map(tag => (
+          {filteredTags.map((tag: TagInfoResponse) => (
             <div key={tag.id} className={styles.dropdownItem} onClick={() => addTag(tag.name)}>
               <Typography.Body>{tag.name}</Typography.Body>
             </div>

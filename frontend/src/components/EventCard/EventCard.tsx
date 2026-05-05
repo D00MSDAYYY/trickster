@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Panel, Typography, Flex } from '@maxhub/max-ui';
 import styles from './EventCard.module.scss';
-import type { EventItem } from '../../api/types';
+import type { TagInfoResponse, EventInfoResponse } from '../../api/types';
 
 interface EventCardProps {
-  eventInfo: EventItem;
+  eventInfo: EventInfoResponse;
   onMoreClick: () => void;
   onRegisterSwapped: () => void;
   onUnregisterSwapped: () => void;
@@ -16,7 +16,7 @@ export const EventCard = ({
   onRegisterSwapped,
   onUnregisterSwapped,
 }: EventCardProps) => {
-  const { name, tags, is_registered, points, date } = eventInfo;
+  const { title, tags, is_registered, points, date } = eventInfo;
 
   const SWIPE_THRESHOLD = 65;
   const SWIPE_FACTOR = 0.3;
@@ -140,17 +140,15 @@ export const EventCard = ({
         <Panel mode="primary" className={styles.panelContent}>
           <div className={styles.header}>
             <Typography.Title variant="medium-strong" className={styles.title}>
-              {name}
+              {title}
             </Typography.Title>
             <div className={styles.pointsBadge}>
               <span className={styles.pointsValue}>🏆 {points}</span>
             </div>
           </div>
           <Flex gap={8} wrap="wrap" style={{ marginTop: 8 }}>
-            {tags.map((tag, idx) => (
-              <span key={idx} className={styles.tag}>
-                🏷️ {tag}
-              </span>
+            {tags.map((tag: TagInfoResponse) => (
+              <span key={tag.id}>{tag.title}</span>  // ✅ правильно
             ))}
           </Flex>
           <div className={styles.dateWrapper}>

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { EventCard } from '../components/EventCard/EventCard';
 import { EventInfoDisplayer } from '../components/EventInfoDisplayer';
-import type { EventItem } from '../api/types';
+import type { EventInfoResponse } from '../api/types';
 
 const EventsPage = () => {
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [events, setEvents] = useState<EventInfoResponse[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<EventInfoResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -16,7 +16,7 @@ const EventsPage = () => {
         setLoading(true);
         const res = await fetch('/api/events', { credentials: 'include' });
         if (!res.ok) throw new Error('Ошибка загрузки событий');
-        const data: EventItem[] = await res.json();
+        const data: EventInfoResponse[] = await res.json();
         setEvents(data);
       } catch (err: any) {
         setError(err.message || 'Неизвестная ошибка');
@@ -31,7 +31,7 @@ const EventsPage = () => {
 
   const handleMoreClick = async (eventId: number) => {
     const res = await fetch(`/api/events/${eventId}`, { credentials: 'include' });
-    const detail: EventItem = await res.json();
+    const detail: EventInfoResponse = await res.json();
     setSelectedEvent(detail);
   };
 
