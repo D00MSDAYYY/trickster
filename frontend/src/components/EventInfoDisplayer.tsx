@@ -30,15 +30,12 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
           overflow: 'hidden',
         }}
       >
-        <div style={{ marginBottom: 16 }}>
-          <Typography.Title variant="large-strong" style={{ marginBottom: 8 }}>
-            {title}
-          </Typography.Title>
-          <Typography.Body style={{ color: 'var(--text-secondary)' }}>
-            {formattedDate}
-          </Typography.Body>
-        </div>
-
+        <Typography.Title variant="large-strong" style={{ marginBottom: 8 }}>
+          {title}
+        </Typography.Title>
+        <Typography.Body style={{ color: 'var(--text-secondary)' }}>
+          {formattedDate}
+        </Typography.Body>
         {description && (
           <Typography.Body style={{ marginBottom: 16, color: 'var(--text-secondary)' }}>
             {description}

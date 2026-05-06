@@ -75,7 +75,7 @@ fi
 source .env/bin/activate
 if ! python -c "import fastapi" &>/dev/null; then
     echo "  Устанавливаю Python-зависимости (fastapi, uvicorn, pydantic)..."
-    pip install --quiet fastapi uvicorn[standard] pydantic
+    pip install --quiet fastapi uvicorn[standard] pydantic sqlmodel
 else
     echo "  Python-зависимости уже установлены."
 fi
