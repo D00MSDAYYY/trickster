@@ -147,19 +147,19 @@ export const EventCard = ({
             </div>
           </div>
           <Flex gap={8} wrap="wrap" style={{ marginTop: 8 }}>
-            {tags.map((tag: TagInfoResponse, idx) => (
-            <span key={idx} style={{
-              background: 'var(--background-secondary, #f0f0f0)',
-              padding: '4px 8px',
-              borderRadius: 8,
-              fontSize: 14,
-            }}>
-              🏷️ {tag.title}
-            </span>
-          ))}
+            {tags && tags.map((tag: TagInfoResponse, idx) => (
+              <span key={idx} style={{
+                background: 'var(--background-secondary, #f0f0f0)',
+                padding: '4px 8px',
+                borderRadius: 8,
+                fontSize: 14,
+              }}>
+                🏷️ {tag.title}
+              </span>
+            ))}
           </Flex>
           <div className={styles.dateWrapper}>
-            <span className={styles.date}>🗓️ {formatEventDate(date)}</span>
+            <span className={styles.date}>🗓️ {date && formatEventDate(date)}</span>
           </div>
         </Panel>
       </div>

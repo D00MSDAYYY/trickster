@@ -289,7 +289,7 @@ def get_settings(
     session: Session = Depends(get_session),
 ):
     if not (user_settings := session.get(UserSettingsLink, user.id)):
-        user_settings = UserSettingsLink(user_id=user.id)
+        user_settings = UserSettingsLink(user_id=user.id) # type: ignore
         session.add(user_settings)
         session.commit()
         session.refresh(user_settings)
@@ -312,7 +312,7 @@ def update_settings(
     session: Session = Depends(get_session),
 ):
     if not (user_settings := session.get(UserSettingsLink, user.id)):
-        user_settings = UserSettingsLink(user_id=user.id)
+        user_settings = UserSettingsLink(user_id=user.id) # type: ignore
         session.add(user_settings)
         session.commit()
         session.refresh(user_settings)
@@ -364,12 +364,12 @@ async def create_event(
 
     # Обрабатываем теги
     for tag_response in event_data.tags:  # type: ignore
-        tag_name = tag_response.name
+        tag_name = tag_response.title
         # Ищем существующий тег или создаём новый
-        tag = session.exec(select(Tag).where(tag.title == tag_name)).first()
+        tag = session.exec(select(Tag).where(Tag.title == tag_name)).first()
 
         if not tag:
-            tag = Tag(name=tag_name)
+            tag = Tag(title=tag_name) # type: ignore
             session.add(tag)
             session.flush()
 
@@ -411,11 +411,11 @@ async def update_event(
 
         # Добавляем новые
         for tag_response in event_data.tags:
-            tag_name = tag_response.name
-            tag = session.exec(select(Tag).where(tag.title == tag_name)).first()
+            tag_name = tag_response.title
+            tag = session.exec(select(Tag).where(Tag.title == tag_name)).first()
 
             if not tag:
-                tag = Tag(name=tag_name)
+                tag = Tag(title=tag_name) # type: ignore
                 session.add(tag)
                 session.flush()
 
@@ -466,6 +466,28 @@ async def delete_event(
     session.commit()
 
     return {"message": f"Событие удалено"}
+
+
+@app.get("/admin/users/search", response_model=List[UserInfoResponse])
+async def search_users(
+    q: str,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+    role: Role = Depends(get_current_role),
+):
+    if not q or len(q.strip()) < 2:
+        return []
+
+    search_term = f"%{q.strip().lower()}%"
+    statement = (
+        select(User)
+        .where(func.lower(User.nickname).like(search_term))
+        .limit(20)
+    )
+
+    users = session.exec(statement).all()
+    # используем visible_fields_response, чтобы не отдавать лишние поля (пароль и т.д.)
+    return [visible_fields_response(u, role=role) for u in users]
 
 
 if __name__ == "__main__":

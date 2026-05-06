@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Typography, Panel, Flex, Button } from '@maxhub/max-ui';
 import { AttendantsEditor } from './AttendantsEditor';
-import type {  EventInfoResponse } from '../../api/types';
+import type { EventInfoResponse, UserInfoResponse } from '../../api/types';
 
 interface AttendantsPanelProps {
   event: EventInfoResponse;
-  initialAttendants: UserSearchItem[];
+  initialAttendants: UserInfoResponse[];
   onSave: (attendantIds: number[]) => Promise<void>;
   onBack: () => void;
 }
@@ -16,7 +16,7 @@ export const AttendantsPanel = ({
   onSave,
   onBack,
 }: AttendantsPanelProps) => {
-  const [attendants, setAttendants] = useState<UserSearchItem[]>(initialAttendants);
+  const [attendants, setAttendants] = useState<UserInfoResponse[]>(initialAttendants);
 
   const handleSave = async () => {
     const ids = attendants.map((u) => u.id);
@@ -46,7 +46,7 @@ export const AttendantsPanel = ({
           </div>
         </div>
 
-        <Flex justify="flex-end" gap={8} style={{ marginTop: 20 }}>
+        <Flex gap={8} style={{ marginTop: 20 }}>
           <Button mode="secondary" onClick={onBack}>
             Отмена
           </Button>

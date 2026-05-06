@@ -124,7 +124,7 @@ const Layout = ({ user }: LayoutProps) => {
               <EventIcon />
             </IconButton>
           </div>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          {/* <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <IconButton
               onClick={handleNotificationsClick}
               style={{
@@ -135,7 +135,7 @@ const Layout = ({ user }: LayoutProps) => {
             >
               <NotificationsIcon />
             </IconButton>
-          </div>
+          </div> */}
 
         </footer>
       </main>

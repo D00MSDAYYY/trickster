@@ -139,7 +139,7 @@ export const EventFormPanel = ({ initial, onSave, onCancel }: EventFormPanelProp
         </div>
       )}
 
-      <Flex gap={12} justify="flex-end" style={{ marginTop: 20 }}>
+      <Flex gap={12} style={{ marginTop: 20 }}>
         <Button mode="secondary" onClick={onCancel}>Отмена</Button>
         <Button mode="primary" onClick={handleSubmit}>Сохранить</Button>
       </Flex>

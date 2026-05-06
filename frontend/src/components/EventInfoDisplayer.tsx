@@ -9,7 +9,7 @@ interface EventInfoDisplayerProps {
 export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) => {
   const { title, description, date, tags, points, is_registered, link } = event;
 
-  const formattedDate = new Date(date).toLocaleString('ru-RU', {
+  const formattedDate = date && new Date(date).toLocaleString('ru-RU', {
     weekday: 'short',
     day: 'numeric',
     month: 'long',
@@ -46,7 +46,7 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
         )}
 
         <Flex gap={8} wrap="wrap" style={{ marginBottom: 16 }}>
-          {tags.map((tag: TagInfoResponse, idx) => (
+          {tags && tags.map((tag: TagInfoResponse, idx) => (
             <span key={idx} style={{
               background: 'var(--background-secondary, #f0f0f0)',
               padding: '4px 8px',
@@ -56,7 +56,7 @@ export const EventInfoDisplayer = ({ event, onBack }: EventInfoDisplayerProps) =
               🏷️ {tag.title}
             </span>
           ))}
-          {points > 0 && (
+          {points && points > 0 && (
             <span style={{
               background: 'var(--background-secondary, #f0f0f0)',
               padding: '4px 8px',

@@ -31,11 +31,11 @@ const AdminPage = () => {
               showChevron
               onClick={() => setCurrentView('editEvents')}
             />
-            <CellSimple
+            {/* <CellSimple
               title="Консоль отладки"
               showChevron
               onClick={() => setCurrentView('debugConsole')}
-            />
+            /> */}
           </CellList>
         </div>
       </Panel>

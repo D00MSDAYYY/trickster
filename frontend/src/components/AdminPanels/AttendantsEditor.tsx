@@ -7,17 +7,17 @@ import {
   IconButton,
   Spinner,
 } from '@maxhub/max-ui';
-import type { UserSearchItem } from '../../api/types';
+import type { UserInfoResponse } from '../../api/types';
 
 interface AttendantsEditorProps {
-  value: UserSearchItem[];
-  onChange: (value: UserSearchItem[]) => void;
+  value: UserInfoResponse[];
+  onChange: (value: UserInfoResponse[]) => void;
   disabled?: boolean;
 }
 
 export const AttendantsEditor = ({ value, onChange, disabled }: AttendantsEditorProps) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<UserSearchItem[]>([]);
+  const [results, setResults] = useState<UserInfoResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleSearch = useCallback(async (q: string) => {
@@ -32,7 +32,7 @@ export const AttendantsEditor = ({ value, onChange, disabled }: AttendantsEditor
         credentials: 'include',
       });
       if (res.ok) {
-        const data: UserSearchItem[] = await res.json();
+        const data: UserInfoResponse[] = await res.json();
         setResults(data);
       } else {
         setResults([]);
@@ -44,7 +44,7 @@ export const AttendantsEditor = ({ value, onChange, disabled }: AttendantsEditor
     }
   }, []);
 
-  const addUser = (user: UserSearchItem) => {
+  const addUser = (user: UserInfoResponse) => {
     if (!value.some((u) => u.id === user.id)) {
       onChange([...value, user]);
     }
@@ -103,7 +103,7 @@ export const AttendantsEditor = ({ value, onChange, disabled }: AttendantsEditor
                 <IconButton
                   mode="tertiary"
                   size="small"
-                  onClick={() => removeUser(user.id)}
+                  onClick={() => user.id && removeUser(user.id)}
                 >
                   <span>✕</span>
                 </IconButton>

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Typography, Panel, CellList, CellSimple, Flex, Button } from '@maxhub/max-ui';
 import { SettingsPanel } from '../components/SettingsPanel';
-import { UserProfile } from '../api/types';
+import { UserInfoResponse } from '../api/types';
 
 interface ProfilePageProps {
-  user: UserProfile;
+  user: UserInfoResponse;
   onLogout?: () => void;  // если решите передавать, но не обязательно
 }
 
@@ -67,8 +67,8 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
           <div style={{ flex: 1, overflowY: 'auto' }}>
             <CellList>
               <CellSimple title="Настройки" showChevron onClick={() => setCurrentView('settings')} />
-              <CellSimple title="Архив мероприятий" showChevron />
-              <CellSimple title="О приложении" showChevron />
+              {/* <CellSimple title="Архив мероприятий" showChevron /> */}
+              {/* <CellSimple title="О приложении" showChevron /> */}
             </CellList>
           </div>
           <Button

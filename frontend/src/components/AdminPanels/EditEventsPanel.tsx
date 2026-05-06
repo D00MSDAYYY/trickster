@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Typography, Panel, Flex, IconButton, Button } from '@maxhub/max-ui';
 import { EventFormPanel } from './EventFormPanel';
 import { AttendantsPanel } from './AttendantsPanel';
-import type { EventInfoResponse } from '../../api/types';
- 
+import type { EventInfoResponse, UserInfoResponse } from '../../api/types';
+
 const formatDate = (dateStr: string) => {
   try {
     const d = new Date(dateStr);
@@ -20,7 +20,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
   const [currentView, setCurrentView] = useState<'list' | 'create' | 'edit' | 'attendants'>('list');
   const [editingEvent, setEditingEvent] = useState<EventInfoResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [attendants, setAttendants] = useState<UserSearchItem[]>([]);
+  const [attendants, setAttendants] = useState<UserInfoResponse[]>([]);
 
   const fetchEvents = async () => {
     try {
@@ -108,7 +108,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
       const attRes = await fetch(`/api/admin/events/${event.id}/attendants`, {
         credentials: 'include',
       });
-      const attData: UserSearchItem[] = attRes.ok ? await attRes.json() : [];
+      const attData: UserInfoResponse[] = attRes.ok ? await attRes.json() : [];
       setAttendants(attData);
       setEditingEvent(event);
       setCurrentView('attendants');
@@ -236,7 +236,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
                       color: 'var(--text-secondary)',
                     }}
                   >
-                    {formatDate(event.date)}
+                    {event.date && formatDate(event.date)}
                   </Typography.Body>
                   <Flex direction="column" gap={4} style={{ flexShrink: 0 }}>
                     {/* Кнопка посетителей */}
@@ -259,7 +259,7 @@ const EditEventsPanel = ({ onBack }: { onBack: () => void }) => {
                     <Button
                       mode="tertiary"
                       size="small"
-                      onClick={() => handleDelete(event.id, event.title)}
+                      onClick={() => event.id && event.title && handleDelete(event.id, event.title)}
                       style={{ backgroundColor: '#d32f2f', color: '#fff' }}
                     >
                       🗑️

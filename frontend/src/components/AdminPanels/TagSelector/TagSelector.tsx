@@ -1,6 +1,6 @@
 // TagSelector.tsx
-import { useState, useEffect, useRef } from 'react';
-import { Input, Flex, Button, Panel } from '@maxhub/max-ui';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Input, Flex, Panel, Typography, IconButton, Spinner } from '@maxhub/max-ui';
 import type { TagInfoResponse } from '../../../api/types';
 
 interface TagSelectorProps {
@@ -9,192 +9,162 @@ interface TagSelectorProps {
 }
 
 export const TagSelector = ({ selected, onChange }: TagSelectorProps) => {
-  const [inputValue, setInputValue] = useState('');
+  const [query, setQuery] = useState('');
   const [allTags, setAllTags] = useState<TagInfoResponse[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [results, setResults] = useState<TagInfoResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Получаем все существующие теги при монтировании
+  // Загрузка всех тегов с сервера
   useEffect(() => {
+    console.log('[TagSelector] Загружаю теги с /tags ...');
     fetch('/api/tags', { credentials: 'include' })
       .then(async res => {
-        console.log('Статус:', res.status);
-        const text = await res.text();
-        console.log('Ответ сервера (первые 500 символов):', text.substring(0, 500));
-        return JSON.parse(text);
-      })
-      .then(data => {
-        console.log('Теги получены:', data);
+        console.log('[TagSelector] Статус ответа:', res.status);
+        if (!res.ok) {
+          console.log('[TagSelector] Ответ не ok, читаю текст ошибки...');
+          const text = await res.text();
+          console.log('[TagSelector] Текст ответа:', text);
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        console.log('[TagSelector] Получены теги:', data);
         setAllTags(data || []);
       })
-      .catch(err => console.error('Ошибка загрузки тегов:', err));
+      .catch(err => {
+        console.error('[TagSelector] Ошибка загрузки тегов:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
-  // Фильтруем теги, исключая уже выбранные, и ищем по началу строки
-  const filteredSuggestions = allTags.filter(
-    tag =>
-      !selected.some(s => s.title === tag.title) &&
-      tag.title?.toLowerCase().startsWith(inputValue.toLowerCase())
+  // Фильтрация при вводе
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setQuery(value);
+      if (value.trim().length === 0) {
+        setResults([]);
+        return;
+      }
+      const lower = value.toLowerCase();
+      console.log('[TagSelector] allTags:', allTags);
+      const filtered = allTags.filter(
+        tag =>
+          tag.title?.toLowerCase().startsWith(lower) &&
+          !selected.some(s => s.title === tag.title)
+      );
+      console.log('[TagSelector] После фильтрации:', filtered);
+      setResults(filtered);
+    },
+    [allTags, selected]
   );
 
-  // Проверяем, есть ли уже в точности такой тег (выбран или существует)
-  const exactMatchExists = selected.some(s => s.title === inputValue.trim()) ||
-    allTags.some(t => t.title === inputValue.trim());
+  // Добавление тега (существующего или созданного)
+  const addTag = useCallback(
+    (tag: TagInfoResponse) => {
+      console.log('[TagSelector] Добавляю тег:', tag);
+      if (!selected.some(s => s.title === tag.title)) {
+        onChange([...selected, tag]);
+      }
+      setQuery('');
+      setResults([]);
+      inputRef.current?.focus();
+    },
+    [selected, onChange]
+  );
 
-  const addTag = (tag: TagInfoResponse) => {
-    if (!selected.some(s => s.title === tag.title)) {
-      onChange([...selected, tag]);
-    }
-    setInputValue('');
-    setShowSuggestions(false);
-    setHighlightIndex(-1);
-    inputRef.current?.focus();
-  };
-
-  const addCustomTag = () => {
-    const trimmed = inputValue.trim();
+  // Создать новый тег, если не найден
+  const createAndAddTag = useCallback(() => {
+    const trimmed = query.trim();
     if (!trimmed) return;
-    const newTag: TagInfoResponse = { title: trimmed };
-    addTag(newTag);
+    console.log('[TagSelector] Enter нажат, создаю/добавляю тег:', trimmed);
+    // Ищем точное совпадение среди предложенных результатов
+    const exactMatch = results.find(
+      r => r.title?.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exactMatch) {
+      addTag(exactMatch);
+    } else {
+      addTag({ title: trimmed });
+    }
+  }, [query, results, addTag]);
+
+  const removeTag = (tagTitle: string) => {
+    console.log('[TagSelector] Удаляю тег:', tagTitle);
+    onChange(selected.filter(t => t.title !== tagTitle));
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-    setShowSuggestions(true);
-    setHighlightIndex(-1);
-  };
-
+  // Обработка Enter
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showSuggestions || filteredSuggestions.length === 0) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addCustomTag();
-      }
-      return;
-    }
-
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      setHighlightIndex(prev => Math.min(prev + 1, filteredSuggestions.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setHighlightIndex(prev => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (highlightIndex >= 0) {
-        addTag(filteredSuggestions[highlightIndex]);
-      } else {
-        addCustomTag();
-      }
-    } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
-      setHighlightIndex(-1);
+      createAndAddTag();
     }
   };
 
-  // Закрываем подсказки при клике вне компонента
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  if (loading) {
+    return <Spinner size={20} />;
+  }
 
   return (
-    <div ref={containerRef}>
-      <Flex gap={8} wrap="wrap" style={{ marginBottom: 8 }}>
-        {selected.map(tag => (
-          <Panel
-            key={tag.title ?? tag.id}
-            mode="secondary"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              borderRadius: 8,
-            }}
-          >
-            <span>{tag.title}</span>
-            <button
-              onClick={() => onChange(selected.filter(t => t.title !== tag.title))}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                fontSize: 16,
-                lineHeight: 1,
-                padding: 0,
-                marginLeft: 4,
-              }}
-              aria-label={`Удалить ${tag.title}`}
-            >
-              ×
-            </button>
-          </Panel>
-        ))}
+    <Flex direction="column" gap={12}>
+      {/* Поиск / добавление */}
+      <Flex direction="column" gap={8}>
+        <Input
+          mode="secondary"
+          placeholder="Введите тег..."
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          ref={inputRef}
+          style={{ width: '100%' }}
+        />
+        {results.length > 0 && (
+          <Flex direction="column" gap={4}>
+            {results.map(tag => (
+              <Panel
+                key={tag.title}
+                mode="secondary"
+                style={{ padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}
+                onClick={() => addTag(tag)}
+              >
+                <Typography.Body>{tag.title}</Typography.Body>
+              </Panel>
+            ))}
+          </Flex>
+        )}
       </Flex>
 
-      <div style={{ position: 'relative' }}>
-        <Flex gap={8}>
-          <Input
-            ref={inputRef}
-            placeholder="Введите тег"
-            value={inputValue}
-            onChange={handleInputChange}
-            onFocus={() => inputValue && setShowSuggestions(true)}
-            onKeyDown={handleKeyDown}
-          />
-          <Button
-            mode="secondary"
-            onClick={addCustomTag}
-            disabled={!inputValue.trim() || exactMatchExists}
-          >
-            Добавить
-          </Button>
+      {/* Выбранные теги */}
+      {selected.length > 0 ? (
+        <Flex direction="column" gap={8}>
+          {selected.map(tag => (
+            <Panel
+              key={tag.title}
+              mode="secondary"
+              style={{ padding: '8px 12px', borderRadius: 8 }}
+            >
+              <Flex justify="space-between" align="center">
+                <Typography.Body>{tag.title}</Typography.Body>
+                <IconButton
+                  mode="tertiary"
+                  size="small"
+                  onClick={() => removeTag(tag.title!)}
+                >
+                  <span>✕</span>
+                </IconButton>
+              </Flex>
+            </Panel>
+          ))}
         </Flex>
-
-        {showSuggestions && filteredSuggestions.length > 0 && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              zIndex: 10,
-              background: 'var(--background-primary, white)',
-              border: '1px solid var(--border, #ccc)',
-              borderRadius: 8,
-              marginTop: 4,
-              maxHeight: 200,
-              overflowY: 'auto',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            }}
-          >
-            {filteredSuggestions.map((tag, index) => (
-              <div
-                key={tag.title ?? index}
-                onClick={() => addTag(tag)}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  backgroundColor: index === highlightIndex ? 'var(--accent-light, #eef)' : 'transparent',
-                  borderBottom: '1px solid var(--border-light, #eee)',
-                }}
-                onMouseEnter={() => setHighlightIndex(index)}
-              >
-                {tag.title}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+      ) : (
+        <Typography.Body variant="small" style={{ color: 'var(--text-secondary)' }}>
+          Теги пока не добавлены
+        </Typography.Body>
+      )}
+    </Flex>
   );
 };
 
