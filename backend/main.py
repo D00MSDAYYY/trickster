@@ -489,6 +489,62 @@ async def search_users(
     # используем visible_fields_response, чтобы не отдавать лишние поля (пароль и т.д.)
     return [visible_fields_response(u, role=role) for u in users]
 
+# ---------------------------------------------------------------------------
+# Посетители мероприятия (административная часть)
+# ---------------------------------------------------------------------------
+@app.get("/admin/events/{event_id}/attendants", response_model=List[UserInfoResponse])
+async def get_event_attendants(
+    event_id: int,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+    role: Role = Depends(get_current_role),
+):
+    event = session.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+
+    # Получаем ID пользователей, отмеченных как посетители
+    attendant_ids = session.exec(
+        select(Attendance.user_id).where(Attendance.event_id == event_id)
+    ).all()
+
+    if not attendant_ids:
+        return []
+
+    # Явно подсказываем анализатору, что это колонка SQLAlchemy
+    statement = select(User).where(
+        User.id.in_(attendant_ids)  # type: ignore[attr-defined]
+    )
+    users = session.exec(statement).all()
+    return [visible_fields_response(u, role=role) for u in users]
+
+
+
+@app.patch("/admin/events/{event_id}/attendants")
+async def update_event_attendants(
+    event_id: int,
+    attendant_ids: List[int],
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+
+    # Удаляем все старые записи о посетителях этого события
+    old_attendants = session.exec(
+        select(Attendance).where(Attendance.event_id == event_id)
+    ).all()
+    for att in old_attendants:
+        session.delete(att)
+
+    # Добавляем новые
+    for uid in attendant_ids:
+        session.add(Attendance(user_id=uid, event_id=event_id))
+
+    session.commit()
+    return {"message": "Список посетителей обновлён"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
