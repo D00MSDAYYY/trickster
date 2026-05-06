@@ -1,71 +1,24 @@
-INFO:     Started server process [29731]
+INFO:     Started server process [68086]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:49935 - "GET /profile HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:49936 - "GET /profile HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:49943 - "GET /profile HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:49944 - "GET /profile HTTP/1.1" 401 Unauthorized
-INFO:     127.0.0.1:49945 - "POST /login HTTP/1.1" 500 Internal Server Error
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/opt/miniconda3/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 416, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.scope, self.receive, self.send
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/opt/miniconda3/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/opt/miniconda3/lib/python3.13/site-packages/fastapi/applications.py", line 1135, in __call__
-    await super().__call__(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
-    raise exc
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/middleware/cors.py", line 93, in __call__
-    await self.simple_response(scope, receive, send, request_headers=headers)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/middleware/cors.py", line 144, in simple_response
-    await self.app(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/opt/miniconda3/lib/python3.13/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
-    await self.app(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
-    await route.handle(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
-    await self.app(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 115, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    raise exc
-  File "/opt/miniconda3/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
-    await app(scope, receive, sender)
-  File "/opt/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 101, in app
-    response = await f(request)
-               ^^^^^^^^^^^^^^^^
-  File "/opt/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 377, in app
-    content = await serialize_response(
-              ^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<10 lines>...
-    )
-    ^
-  File "/opt/miniconda3/lib/python3.13/site-packages/fastapi/routing.py", line 215, in serialize_response
-    raise ResponseValidationError(
-    ...<3 lines>...
-    )
-fastapi.exceptions.ResponseValidationError: 1 validation error:
-  {'type': 'datetime_type', 'loc': ('response', 'created_at'), 'msg': 'Input should be a valid datetime', 'input': None}
-
-  File "/Users/killroy/Desktop/code/my_projects/hameln/backend/main.py", line 60, in login
-    POST /login
+INFO:     127.0.0.1:54692 - "GET /profile HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:54693 - "GET /profile HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:54694 - "POST /login HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54695 - "GET /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54696 - "GET /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54697 - "GET /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54702 - "PATCH /profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54703 - "PATCH /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54705 - "PATCH /profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54707 - "PATCH /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54709 - "GET /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54711 - "GET /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54713 - "GET /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54715 - "GET /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54719 - "GET /profile HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54724 - "GET /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54723 - "GET /events HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54729 - "GET /settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54727 - "GET /settings HTTP/1.1" 200 OK

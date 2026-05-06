@@ -1,18 +1,26 @@
-# ========================== main.py ==========================
+# backend/main.py
 import uuid
-import random
-from typing import Optional, List
+from typing import List
+from contextlib import asynccontextmanager
 
 import uvicorn
+from sqlmodel import Session, select
+from pydantic_visible_fields import visible_fields_response
 from fastapi import FastAPI, HTTPException, Response, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from pydantic_visible_fields import visible_fields_response
 
-from dbs import *
+from dbs import init_db, get_session
+from models.internal import *
 from models.external import *
 
-app = FastAPI(title="Event Manager API", version="0.3.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="Event Manager API", version="0.4.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,23 +30,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Словарь сессий (пока в памяти, потом можно в БД или Redis)
+sessions_db: dict[str, int] = {}
+
 
 # ---------------------------------------------------------------------------
 # Зависимости
 # ---------------------------------------------------------------------------
-def get_user_by_password(password: str) -> Optional[User]:
-    for u in users_db:
-        if u.password == password:
-            return u
-    return None
-
-
-def get_current_user(request: Request) -> User:
+def get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
     session_id = request.cookies.get("session_id")
     if not session_id or session_id not in sessions_db:
         raise HTTPException(status_code=401, detail="Не авторизован")
     user_id = sessions_db[session_id]
-    user = next((u for u in users_db if u.id == user_id), None)
+    user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=401, detail="Пользователь не найден")
     return user
@@ -58,12 +62,21 @@ def get_current_role(user: User = Depends(get_current_user)) -> Role:
 # Аутентификация
 # ---------------------------------------------------------------------------
 @app.post("/login", response_model=UserInfoResponse)
-async def login(login_data: LoginRequest, response: Response):
-    user = get_user_by_password(login_data.password)
+async def login(
+    login_data: LoginRequest,
+    response: Response,
+    session: Session = Depends(get_session),
+):
+    # Ищем пользователя по паролю (временно, потом будет хеш)
+    statement = select(User).where(User.password == login_data.password)
+    user = session.exec(statement).first()
+
     if not user:
         raise HTTPException(status_code=401, detail="Неверный пароль")
+
     session_id = uuid.uuid4().hex
     sessions_db[session_id] = user.id  # type: ignore
+
     response.set_cookie(
         key="session_id",
         value=session_id,
@@ -90,7 +103,8 @@ async def logout(request: Request, response: Response):
 # ---------------------------------------------------------------------------
 @app.get("/profile", response_model=UserInfoResponse)
 async def get_profile(
-    user: User = Depends(get_current_user), role: Role = Depends(get_current_role)
+    user: User = Depends(get_current_user),
+    role: Role = Depends(get_current_role),
 ):
     return visible_fields_response(user, role=role)
 
@@ -100,38 +114,61 @@ async def update_profile(
     profile_data: UserInfoResponse,
     user: User = Depends(get_current_user),
     role: Role = Depends(get_current_role),
+    session: Session = Depends(get_session),
 ):
     data = profile_data.model_dump(
         exclude_unset=True,
         exclude={"id", "role", "created_at"},
     )
     for field, value in data.items():
-        setattr(user, field, value)
+        if hasattr(user, field):
+            setattr(user, field, value)
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
     return visible_fields_response(user, role=role)
 
 
 # ---------------------------------------------------------------------------
 # События (пользовательская часть)
 # ---------------------------------------------------------------------------
-
-
-def event_to_response2(
-    event: Event, role: Role, is_registered: Optional[bool] = None
+def event_to_response(
+    event: Event,
+    role: Role,
+    user_id: int | None = None,
+    session: Session | None = None,
 ) -> EventInfoResponse:
-
+    """Формирует EventInfoResponse с тегами и флагом регистрации."""
     data = visible_fields_response(event, role=role)
-    
-    # Собираем теги из связей
-    tag_ids = [et.tag_id for et in event_tags_db if et.event_id == event.id]
-    tags = [t for t in tags_db if t.id in tag_ids]
-    tag_responses = [TagInfoResponse(**visible_fields_response(t, role=role).model_dump()) for t in tags]
-    
-    # Копируем данные и добавляем недостающие поля
+
+    # Получаем теги через связи
+    tags = []
+    if session:
+        statement = (
+            select(Tag).join(EventTagLink).where(EventTagLink.event_id == event.id)
+        )
+        tags = session.exec(statement).all()
+
+    tag_responses = [
+        TagInfoResponse(**visible_fields_response(t, role=role).model_dump())
+        for t in tags
+    ]
+
     update_dict = data.model_dump()
     update_dict["tags"] = tag_responses
-    if is_registered is not None:
-        update_dict["is_registered"] = is_registered
-    
+
+    # Проверяем регистрацию
+    if user_id and session:
+        registration = session.exec(
+            select(Registration).where(
+                Registration.user_id == user_id,
+                Registration.event_id == event.id,
+            )
+        ).first()
+        update_dict["is_registered"] = registration is not None
+
     return EventInfoResponse(**update_dict)
 
 
@@ -139,15 +176,12 @@ def event_to_response2(
 async def get_events(
     user: User = Depends(get_current_user),
     role: Role = Depends(get_current_role),
+    session: Session = Depends(get_session),
 ):
-    active = [e for e in events_db if not e.is_archived]
-    result = []
-    for e in active:
-        is_reg = any(
-            r.user_id == user.id and r.event_id == e.id for r in registrations_db
-        )
-        result.append(event_to_response2(e, role, is_reg))
-    return result
+    statement = select(Event).where(Event.is_archived == False)
+    events = session.exec(statement).all()
+
+    return [event_to_response(e, role, user.id, session) for e in events]
 
 
 @app.get("/events/{event_id}", response_model=EventInfoResponse)
@@ -155,163 +189,281 @@ async def get_event_detail(
     event_id: int,
     user: User = Depends(get_current_user),
     role: Role = Depends(get_current_role),
+    session: Session = Depends(get_session),
 ):
-    event = next((e for e in events_db if e.id == event_id), None)
+    event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
-    reg = any(r.user_id == user.id and r.event_id == event_id for r in registrations_db)
-    return event_to_response2(event, role, reg)
+
+    return event_to_response(event, role, user.id, session)
 
 
 @app.post("/events/{event_id}/register")
-async def register_for_event(event_id: int, user: User = Depends(get_current_user)):
-    event = next((e for e in events_db if e.id == event_id), None)
+async def register_for_event(
+    event_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
     if event.is_archived:
         raise HTTPException(
             status_code=400, detail="Нельзя зарегистрироваться на прошедшее событие"
         )
-    if any(r.user_id == user.id and r.event_id == event_id for r in registrations_db):
+
+    # Проверяем существующую регистрацию
+    existing = session.exec(
+        select(Registration).where(
+            Registration.user_id == user.id,
+            Registration.event_id == event_id,
+        )
+    ).first()
+
+    if existing:
         raise HTTPException(status_code=409, detail="Вы уже зарегистрированы")
-    registrations_db.append(Registration(user_id=user.id, event_id=event_id))  # type: ignore
+
+    registration = Registration(user_id=user.id, event_id=event_id)  # type: ignore
+    session.add(registration)
+    session.commit()
+
     return {"message": f"Вы зарегистрированы на событие '{event.title}'"}
 
 
 @app.delete("/events/{event_id}/register")
-async def unregister_from_event(event_id: int, user: User = Depends(get_current_user)):
-    reg = next(
-        (
-            r
-            for r in registrations_db
-            if r.user_id == user.id and r.event_id == event_id
-        ),
-        None,
-    )
-    if not reg:
+async def unregister_from_event(
+    event_id: int,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Событие не найдено")
+
+    registration = session.exec(
+        select(Registration).where(
+            Registration.user_id == user.id,
+            Registration.event_id == event_id,
+        )
+    ).first()
+
+    if not registration:
         raise HTTPException(status_code=404, detail="Регистрация не найдена")
-    registrations_db.remove(reg)
-    event = next((e for e in events_db if e.id == event_id), None)
-    return {"message": f"Регистрация на '{event.title}' отменена"}  # type: ignore
+
+    session.delete(registration)
+    session.commit()
+
+    return {"message": f"Регистрация на '{event.title}' отменена"}
 
 
 # ---------------------------------------------------------------------------
 # Теги
 # ---------------------------------------------------------------------------
 @app.get("/tags", response_model=List[TagInfoResponse])
-async def get_tags(role: Role = Depends(get_current_role)):
-    return [visible_fields_response(t, role=role) for t in tags_db]
+async def get_tags(
+    role: Role = Depends(get_current_role),
+    session: Session = Depends(get_session),
+):
+    tags = session.exec(select(Tag)).all()
+    return [visible_fields_response(t, role=role) for t in tags]
 
 
 # ---------------------------------------------------------------------------
 # Уведомления
 # ---------------------------------------------------------------------------
 @app.get("/notifications", response_model=List[NotificationInfoResponse])
-async def get_notifications(role: Role = Depends(get_current_role)):
-    return [visible_fields_response(n, role=role) for n in notifications_db]
+async def get_notifications(
+    role: Role = Depends(get_current_role),
+    session: Session = Depends(get_session),
+):
+    notifications = session.exec(select(Notification)).all()
+    return [visible_fields_response(n, role=role) for n in notifications]
+
+
+# ----------------------------------------------
+# Настройки
+# ----------------------------------------------
+@app.get("/settings", response_model=SettingsResponse)
+def get_settings(
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if not (user_settings := session.get(UserSettingsLink, user.id)):
+        user_settings = UserSettingsLink(user_id=user.id)
+        session.add(user_settings)
+        session.commit()
+        session.refresh(user_settings)
+
+    # Защита от незаполненного JSON
+    if not user_settings.settings:
+        user_settings.settings = Settings().model_dump(mode="json")
+        session.add(user_settings)
+        session.commit()
+        session.refresh(user_settings)
+
+    settings_obj = Settings(**user_settings.settings)
+    return visible_fields_response(settings_obj, role=user.role).model_dump()
+
+
+@app.patch("/settings", response_model=SettingsResponse)
+def update_settings(
+    new_settings: SettingsResponse,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    if not (user_settings := session.get(UserSettingsLink, user.id)):
+        user_settings = UserSettingsLink(user_id=user.id)
+        session.add(user_settings)
+        session.commit()
+        session.refresh(user_settings)
+
+    if not user_settings.settings:
+        user_settings.settings = Settings().model_dump(mode="json")
+
+    # Явное обновление словаря
+    updated_dict = {
+        **user_settings.settings,
+        **new_settings.model_dump(exclude_unset=True),
+    }
+    validated = Settings(**updated_dict)
+    user_settings.settings = validated.model_dump(mode='json')  # присвоение, а не .update()
+
+    session.add(user_settings)
+    session.commit()
+    session.refresh(user_settings)
+
+    final_settings = Settings(**user_settings.settings)
+    return visible_fields_response(final_settings, role=user.role).model_dump()
 
 
 # ---------------------------------------------------------------------------
 # Административные эндпоинты
 # ---------------------------------------------------------------------------
 @app.get("/admin/events", response_model=List[EventInfoResponse])
-async def get_admin_events(admin: User = Depends(ensure_admin)):
-    return [event_to_response2(e, Role.admin) for e in events_db]
+async def get_admin_events(
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    events = session.exec(select(Event)).all()
+    return [event_to_response(e, Role.admin, session=session) for e in events]
 
 
 @app.post("/admin/events", response_model=EventInfoResponse)
 async def create_event(
-    event_data: EventInfoResponse, admin: User = Depends(ensure_admin)
+    event_data: EventInfoResponse,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
 ):
-    new_event = Event(**event_data.model_dump())  # type: ignore
+    # Создаём событие
+    event_dict = event_data.model_dump(exclude={"tags"})
+    event = Event(**event_dict)
+    session.add(event)
+    session.flush()
 
-    
-    events_db.append(new_event)
-    for (tag_id, tag_name) in event_data.tags:
-        tag = next((t for t in tags_db if t.name.lower() == tag_name.lower()), None)
+    # Обрабатываем теги
+    for tag_response in event_data.tags:  # type: ignore
+        tag_name = tag_response.name
+        # Ищем существующий тег или создаём новый
+        tag = session.exec(select(Tag).where(Tag.name == tag_name)).first()
+
         if not tag:
-            tag = Tag(id=max((t.id for t in tags_db), default=0) + 1, name=tag_name)
-            tags_db.append(tag)
-        event_tags_db.append(EventTagLink(event_id=new_event.id, tag_id=tag.id))
+            tag = Tag(name=tag_name)
+            session.add(tag)
+            session.flush()
 
-    return event_to_response2(new_event, Role.admin)
+        # Создаём связь
+        event_tag = EventTagLink(event_id=event.id, tag_id=tag.id)  # type: ignore
+        session.add(event_tag)
+
+    session.commit()
+    session.refresh(event)
+
+    return event_to_response(event, Role.admin, session=session)
 
 
 @app.patch("/admin/events/{event_id}", response_model=EventInfoResponse)
 async def update_event(
-    event_id: int, event_data: EventInfoResponse, admin: User = Depends(ensure_admin)
+    event_id: int,
+    event_data: EventInfoResponse,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
 ):
-    event = next((e for e in events_db if e.id == event_id), None)
+    event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
-    update_dict = event_data.model_dump(exclude_unset=True)
+
+    update_dict = event_data.model_dump(exclude_unset=True, exclude={"tags"})
+
     for field, value in update_dict.items():
-        if field != "tags":
+        if hasattr(event, field):
             setattr(event, field, value)
-    if "tags" in update_dict:
-        global event_tags_db
-        event_tags_db = [et for et in event_tags_db if et.event_id != event_id]
-        for tag_name in update_dict["tags"]:
-            tag = next((t for t in tags_db if t.name.lower() == tag_name.lower()), None)
+
+    # Обновляем теги, если переданы
+    if event_data.tags is not None:
+        # Удаляем старые связи
+        old_links = session.exec(
+            select(EventTagLink).where(EventTagLink.event_id == event_id)
+        ).all()
+        for link in old_links:
+            session.delete(link)
+
+        # Добавляем новые
+        for tag_response in event_data.tags:
+            tag_name = tag_response.name
+            tag = session.exec(select(Tag).where(Tag.name == tag_name)).first()
+
             if not tag:
-                tag = Tag(id=max((t.id for t in tags_db), default=0) + 1, name=tag_name)
-                tags_db.append(tag)
-            event_tags_db.append(EventTagLink(event_id=event.id, tag_id=tag.id))
-    return event_to_response2(event, Role.admin)
+                tag = Tag(name=tag_name)
+                session.add(tag)
+                session.flush()
+
+            event_tag = EventTagLink(event_id=event.id, tag_id=tag.id)  # type: ignore
+            session.add(event_tag)
+
+    session.add(event)
+    session.commit()
+    session.refresh(event)
+
+    return event_to_response(event, Role.admin, session=session)
 
 
 @app.delete("/admin/events/{event_id}")
-async def delete_event(event_id: int, admin: User = Depends(ensure_admin)):
-    global registrations_db, attendants_db, event_tags_db, events_db
-
-    event = next((e for e in events_db if e.id == event_id), None)
+async def delete_event(
+    event_id: int,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
-    
-    registrations_db = [r for r in registrations_db if r.event_id != event_id]
-    attendants_db = [a for a in attendants_db if a.event_id != event_id]
-    event_tags_db = [et for et in event_tags_db if et.event_id != event_id]
-    events_db.remove(event)
-    return {"message": f"Событие '{event.title}' удалено"}
 
+    # Удаляем связанные записи
+    # Регистрации
+    registrations = session.exec(
+        select(Registration).where(Registration.event_id == event_id)
+    ).all()
+    for reg in registrations:
+        session.delete(reg)
 
-# @app.get("/admin/users/search", response_model=List[UserSearchItem])
-# async def search_users(q: str, admin: User = Depends(ensure_admin)):
-#     if not q:
-#         return []
-#     q_lower = q.lower()
-#     return [
-#         UserSearchItem(id=u.id, nickname=u.nickname)
-#         for u in users_db
-#         if q_lower in u.nickname.lower()
-#     ][:20]
+    # Посещения
+    attendances = session.exec(
+        select(Attendance).where(Attendance.event_id == event_id)
+    ).all()
+    for att in attendances:
+        session.delete(att)
 
+    # Связи с тегами
+    links = session.exec(
+        select(EventTagLink).where(EventTagLink.event_id == event_id)
+    ).all()
+    for link in links:
+        session.delete(link)
 
-# @app.get("/admin/events/{event_id}/attendants", response_model=List[UserSearchItem])
-# async def get_event_attendants(event_id: int, admin: User = Depends(ensure_admin)):
-#     event = next((e for e in events_db if e.id == event_id), None)
-#     if not event:
-#         raise HTTPException(status_code=404, detail="Событие не найдено")
-#     attendant_ids = [a.user_id for a in attendants_db if a.event_id == event_id]
-#     return [
-#         UserSearchItem(id=u.id, nickname=u.nickname)
-#         for u in users_db
-#         if u.id in attendant_ids
-#     ]
+    # Удаляем само событие
+    session.delete(event)
+    session.commit()
 
-
-# @app.patch("/admin/events/{event_id}/attendants")
-# async def update_event_attendants(
-#     event_id: int, attendant_ids: List[int], admin: User = Depends(ensure_admin)
-# ):
-#     event = next((e for e in events_db if e.id == event_id), None)
-#     if not event:
-#         raise HTTPException(status_code=404, detail="Событие не найдено")
-#     global attendants_db
-#     attendants_db = [a for a in attendants_db if a.event_id != event_id]
-#     for uid in attendant_ids:
-#         attendants_db.append(Attendance(user_id=uid, event_id=event_id))
-#     return {"message": "Список посетителей обновлён"}
+    return {"message": f"Событие удалено"}
 
 
 if __name__ == "__main__":

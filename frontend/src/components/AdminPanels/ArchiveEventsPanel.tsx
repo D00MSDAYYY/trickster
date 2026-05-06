@@ -16,7 +16,7 @@ const ArchiveEventsPanel = ({ onBack }: ArchiveEventsPanelProps) => {
     const fetchArchived = async () => {
       try {
         setLoading(true);
-        const res = await fetch('/api//admin/events/archived', {
+        const res = await fetch('/api/admin/events/archived', {
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Ошибка загрузки архива');

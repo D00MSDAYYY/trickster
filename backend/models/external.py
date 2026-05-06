@@ -1,10 +1,10 @@
 # external
-from typing import Optional, List
-from enum import Enum
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional, List
+
+from pydantic import BaseModel
 from pydantic_visible_fields import VisibleFieldsModel, field, configure_roles
-from .internal import Role
+from .internal import Role, AppTheme
 
 configure_roles(
     role_enum=Role,
@@ -17,20 +17,27 @@ configure_roles(
 
 
 class UserInfoResponse(VisibleFieldsModel):
-    id: int | None = field(visible_to=[Role.admin])
+    id: Optional[int] = field(visible_to=[Role.admin], default=None)
 
-    nickname: str = field(visible_to=[Role.observer])
-    role: Role = field(visible_to=[Role.admin])
+    nickname: Optional[str] = field(visible_to=[Role.observer], default=None)
+    role: Optional[Role] = field(visible_to=[Role.admin], default=None)
 
-    firstname: str = field(visible_to=[Role.admin])
-    middlename: Optional[str] = field(visible_to=[Role.admin])
-    lastname: str = field(visible_to=[Role.admin])
+    firstname: Optional[str] = field(visible_to=[Role.admin], default=None)
+    middlename: Optional[str] = field(visible_to=[Role.admin], default=None)
+    lastname: Optional[str] = field(visible_to=[Role.admin], default=None)
 
-    points: int = field(visible_to=[Role.observer])
-    company: str = field(visible_to=[Role.user])
-    password: str = field(visible_to=[Role.admin])
+    points: Optional[int] = field(visible_to=[Role.observer], default=None)
+    company: Optional[str] = field(visible_to=[Role.user], default=None)
+    password: Optional[str] = field(visible_to=[Role.admin], default=None)
 
-    created_at: datetime = field(visible_to=[Role.admin])
+    created_at: Optional[datetime] = field(visible_to=[Role.admin], default=None)
+
+
+class SettingsResponse(VisibleFieldsModel):
+    app_theme: AppTheme = field(visible_to=[Role.user])
+
+    days_to_notify: int = field(visible_to=[Role.user])
+    do_notify: bool = field(visible_to=[Role.user])
 
 
 class TagInfoResponse(VisibleFieldsModel):
