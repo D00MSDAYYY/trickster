@@ -5,3 +5,5 @@ sqlmodel>=0.0.8
 openpyxl>=3.0.0
 pydantic-visible-fields>=0.1.0
 python-multipart>=0.0.5
+passlib
+redis

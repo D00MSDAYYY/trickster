@@ -17,61 +17,61 @@ configure_roles(
 
 
 class UserInfoResponse(VisibleFieldsModel):
-    id: Optional[int] = field(visible_to=[Role.admin], default=None)
+    id: int | None = field(visible_to=[Role.admin], default=None)
 
-    nickname: Optional[str] = field(visible_to=[Role.observer], default=None)
-    role: Optional[Role] = field(visible_to=[Role.admin], default=None)
+    nickname: str | None = field(visible_to=[Role.observer], default=None)
+    role: Role | None = field(visible_to=[Role.admin], default=None)
 
-    firstname: Optional[str] = field(visible_to=[Role.admin], default=None)
-    middlename: Optional[str] = field(visible_to=[Role.admin], default=None)
-    lastname: Optional[str] = field(visible_to=[Role.admin], default=None)
+    firstname: str | None = field(visible_to=[Role.admin], default=None)
+    middlename: str | None = field(visible_to=[Role.admin], default=None)
+    lastname: str | None = field(visible_to=[Role.admin], default=None)
 
-    points: Optional[int] = field(visible_to=[Role.observer], default=None)
-    company: Optional[str] = field(visible_to=[Role.user], default=None)
-    password: Optional[str] = field(visible_to=[Role.admin], default=None)
+    points: int | None = field(visible_to=[Role.observer], default=None)
+    company: str | None = field(visible_to=[Role.user], default=None)
+    password: str | None = field(visible_to=[Role.admin], default=None)
 
-    created_at: Optional[datetime] = field(visible_to=[Role.admin], default=None)
+    created_at: datetime | None = field(visible_to=[Role.admin], default=None)
 
 
 class SettingsResponse(VisibleFieldsModel):
-    app_theme: Optional[AppTheme] = field(visible_to=[Role.user], default=None)
+    app_theme: AppTheme | None = field(visible_to=[Role.user], default=None)
 
-    days_to_notify: Optional[int] = field(visible_to=[Role.user], default=None)
-    do_notify: Optional[bool] = field(visible_to=[Role.user], default=None)
+    days_to_notify: int | None = field(visible_to=[Role.user], default=None)
+    do_notify: bool | None = field(visible_to=[Role.user], default=None)
 
 
 class TagInfoResponse(VisibleFieldsModel):
-    id: Optional[int] = field(visible_to=[Role.admin], default=None)
-    title: Optional[str] = field(visible_to=[Role.observer], default=None)
+    id: int | None = field(visible_to=[Role.admin], default=None)
+    title: str | None = field(visible_to=[Role.observer], default=None)
 
 
 class EventInfoResponse(VisibleFieldsModel):
-    id: Optional[int] = field(visible_to=[Role.admin], default=None)
+    id: int | None = field(visible_to=[Role.admin], default=None)
 
-    title: Optional[str] = field(visible_to=[Role.observer], default=None)
-    points: Optional[int] = field(visible_to=[Role.observer], default=None)
-    date: Optional[datetime] = field(visible_to=[Role.observer], default=None)
+    title: str | None = field(visible_to=[Role.observer], default=None)
+    points: int | None = field(visible_to=[Role.observer], default=None)
+    date: datetime | None = field(visible_to=[Role.observer], default=None)
 
-    tags: Optional[List["TagInfoResponse"]] = field(
+    tags: List["TagInfoResponse"] | None = field(
         visible_to=[Role.observer], default=None
     )
 
-    description: Optional[str] = field(visible_to=[Role.observer], default=None)
-    link: Optional[str] = field(visible_to=[Role.observer], default=None)
+    description: str | None = field(visible_to=[Role.observer], default=None)
+    link: str | None = field(visible_to=[Role.observer], default=None)
 
-    is_archived: Optional[bool] = field(visible_to=[Role.admin], default=None)
-    is_registered: Optional[bool] = field(visible_to=[Role.user], default=None)
+    is_archived: bool | None = field(visible_to=[Role.admin], default=None)
+    is_registered: bool | None = field(visible_to=[Role.user], default=None)
 
-    created_at: Optional[datetime] = field(visible_to=[Role.admin], default=None)
+    created_at: datetime | None = field(visible_to=[Role.admin], default=None)
 
 
 class NotificationInfoResponse(VisibleFieldsModel):
-    id: Optional[int] = field(visible_to=[Role.admin], default=None)
+    id: int | None = field(visible_to=[Role.admin], default=None)
 
-    title: Optional[str] = field(visible_to=[Role.user], default=None)
-    body: Optional[str] = field(visible_to=[Role.user], default=None)
+    title: str | None = field(visible_to=[Role.user], default=None)
+    body: str | None = field(visible_to=[Role.user], default=None)
 
-    created_at: Optional[datetime] = field(visible_to=[Role.admin], default=None)
+    created_at: datetime | None = field(visible_to=[Role.admin], default=None)
 
 
 class LoginRequest(BaseModel):

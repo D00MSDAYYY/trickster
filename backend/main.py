@@ -1,25 +1,28 @@
-# backend/main.py
 import uuid
 from typing import List
+from datetime import date
 from contextlib import asynccontextmanager
-from datetime import  date
 
-
+import redis
 import uvicorn
-from sqlmodel import Session, select
-from pydantic_visible_fields import visible_fields_response
-from fastapi import FastAPI, HTTPException, Response, Request, Depends
+from sqlmodel import Session, select, func
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from report_generator import generate_excel_report
+from fastapi import FastAPI, HTTPException, Response, Request, Depends, Cookie
+from pydantic_visible_fields import visible_fields_response
 
-
-from dbs import init_db, get_session
 from models.internal import *
 from models.external import *
+from dbs import init_db, get_session
+from report_generator import generate_excel_report
+
+redis_client = redis.Redis(host="localhost", port=6379, decode_responses=True)
+SESSION_TTL = 60 * 60 * 24  # 24 часа
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    redis_client.ping()
     init_db()
     yield
 
@@ -34,21 +37,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Словарь сессий (пока в памяти, потом можно в БД или Redis)
-sessions_db: dict[str, int] = {}
+
+def save_session(session_id: str, user_id: int):
+    redis_client.setex(session_id, SESSION_TTL, user_id)
 
 
-# ---------------------------------------------------------------------------
-# Зависимости
-# ---------------------------------------------------------------------------
-def get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
-    session_id = request.cookies.get("session_id")
-    if not session_id or session_id not in sessions_db:
-        raise HTTPException(status_code=401, detail="Не авторизован")
-    user_id = sessions_db[session_id]
+def load_user_id(session_id: str) -> int | None:
+    uid = redis_client.get(session_id)
+    return int(uid) if uid is not None else None  # type: ignore
+
+
+def delete_session(session_id: str):
+    redis_client.delete(session_id)
+
+
+def get_current_user(
+    session_id: str | None = Cookie(None, alias="session_id"),
+    session: Session = Depends(get_session),
+) -> User:
+    if not session_id:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = redis_client.get(session_id)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid session")
+
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=401, detail="Пользователь не найден")
+        raise HTTPException(status_code=401, detail="User not found")
     return user
 
 
@@ -58,29 +74,32 @@ def ensure_admin(user: User = Depends(get_current_user)):
     return user
 
 
-def get_current_role(user: User = Depends(get_current_user)) -> Role:
-    return user.role
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Внутренняя ошибка сервера"},
+    )
 
 
 # ---------------------------------------------------------------------------
 # Аутентификация
 # ---------------------------------------------------------------------------
+
+
 @app.post("/login", response_model=UserInfoResponse)
 async def login(
     login_data: LoginRequest,
     response: Response,
     session: Session = Depends(get_session),
 ):
-    # Ищем пользователя по паролю (временно, потом будет хеш)
-    statement = select(User).where(User.password == login_data.password)
-    user = session.exec(statement).first()
-
+    user = session.exec(
+        select(User).where(User.password == login_data.password)
+    ).first()
     if not user:
         raise HTTPException(status_code=401, detail="Неверный пароль")
-
     session_id = uuid.uuid4().hex
-    sessions_db[session_id] = user.id  # type: ignore
-
+    save_session(session_id, user.id)  # type: ignore # <-- Redis
     response.set_cookie(
         key="session_id",
         value=session_id,
@@ -88,7 +107,7 @@ async def login(
         secure=False,
         samesite="lax",
         path="/",
-        max_age=60 * 60 * 24,
+        max_age=SESSION_TTL,
     )
     return visible_fields_response(user, role=user.role)
 
@@ -96,8 +115,8 @@ async def login(
 @app.post("/logout")
 async def logout(request: Request, response: Response):
     session_id = request.cookies.get("session_id")
-    if session_id and session_id in sessions_db:
-        del sessions_db[session_id]
+    if session_id:
+        delete_session(session_id)
     response.delete_cookie("session_id")
     return {"message": "Вы вышли"}
 
@@ -108,16 +127,14 @@ async def logout(request: Request, response: Response):
 @app.get("/profile", response_model=UserInfoResponse)
 async def get_profile(
     user: User = Depends(get_current_user),
-    role: Role = Depends(get_current_role),
 ):
-    return visible_fields_response(user, role=role)
+    return visible_fields_response(user, role=user.role)
 
 
 @app.patch("/profile", response_model=UserInfoResponse)
 async def update_profile(
     profile_data: UserInfoResponse,
     user: User = Depends(get_current_user),
-    role: Role = Depends(get_current_role),
     session: Session = Depends(get_session),
 ):
     data = profile_data.model_dump(
@@ -132,7 +149,7 @@ async def update_profile(
     session.commit()
     session.refresh(user)
 
-    return visible_fields_response(user, role=role)
+    return visible_fields_response(user, role=user.role)
 
 
 # ---------------------------------------------------------------------------
@@ -179,27 +196,25 @@ def event_to_response(
 @app.get("/events", response_model=List[EventInfoResponse])
 async def get_events(
     user: User = Depends(get_current_user),
-    role: Role = Depends(get_current_role),
     session: Session = Depends(get_session),
 ):
     statement = select(Event).where(Event.is_archived == False)
     events = session.exec(statement).all()
 
-    return [event_to_response(e, role, user.id, session) for e in events]
+    return [event_to_response(e, user.role, user.id, session) for e in events]
 
 
 @app.get("/events/{event_id}", response_model=EventInfoResponse)
 async def get_event_detail(
     event_id: int,
     user: User = Depends(get_current_user),
-    role: Role = Depends(get_current_role),
     session: Session = Depends(get_session),
 ):
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
 
-    return event_to_response(event, role, user.id, session)
+    return event_to_response(event, user.role, user.id, session)
 
 
 @app.post("/events/{event_id}/register")
@@ -265,11 +280,11 @@ async def unregister_from_event(
 # ---------------------------------------------------------------------------
 @app.get("/tags", response_model=List[TagInfoResponse])
 async def get_tags(
-    role: Role = Depends(get_current_role),
+    user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     tags = session.exec(select(Tag)).all()
-    return [visible_fields_response(t, role=role) for t in tags]
+    return [visible_fields_response(t, role=user.role) for t in tags]
 
 
 # ---------------------------------------------------------------------------
@@ -277,11 +292,11 @@ async def get_tags(
 # ---------------------------------------------------------------------------
 @app.get("/notifications", response_model=List[NotificationInfoResponse])
 async def get_notifications(
-    role: Role = Depends(get_current_role),
+    user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     notifications = session.exec(select(Notification)).all()
-    return [visible_fields_response(n, role=role) for n in notifications]
+    return [visible_fields_response(n, role=user.role) for n in notifications]
 
 
 # ----------------------------------------------
@@ -293,7 +308,7 @@ def get_settings(
     session: Session = Depends(get_session),
 ):
     if not (user_settings := session.get(UserSettingsLink, user.id)):
-        user_settings = UserSettingsLink(user_id=user.id) # type: ignore
+        user_settings = UserSettingsLink(user_id=user.id)  # type: ignore
         session.add(user_settings)
         session.commit()
         session.refresh(user_settings)
@@ -316,7 +331,7 @@ def update_settings(
     session: Session = Depends(get_session),
 ):
     if not (user_settings := session.get(UserSettingsLink, user.id)):
-        user_settings = UserSettingsLink(user_id=user.id) # type: ignore
+        user_settings = UserSettingsLink(user_id=user.id)  # type: ignore
         session.add(user_settings)
         session.commit()
         session.refresh(user_settings)
@@ -373,7 +388,7 @@ async def create_event(
         tag = session.exec(select(Tag).where(Tag.title == tag_name)).first()
 
         if not tag:
-            tag = Tag(title=tag_name) # type: ignore
+            tag = Tag(title=tag_name)  # type: ignore
             session.add(tag)
             session.flush()
 
@@ -419,7 +434,7 @@ async def update_event(
             tag = session.exec(select(Tag).where(Tag.title == tag_name)).first()
 
             if not tag:
-                tag = Tag(title=tag_name) # type: ignore
+                tag = Tag(title=tag_name)  # type: ignore
                 session.add(tag)
                 session.flush()
 
@@ -443,32 +458,8 @@ async def delete_event(
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
 
-    # Удаляем связанные записи
-    # Регистрации
-    registrations = session.exec(
-        select(Registration).where(Registration.event_id == event_id)
-    ).all()
-    for reg in registrations:
-        session.delete(reg)
-
-    # Посещения
-    attendances = session.exec(
-        select(Attendance).where(Attendance.event_id == event_id)
-    ).all()
-    for att in attendances:
-        session.delete(att)
-
-    # Связи с тегами
-    links = session.exec(
-        select(EventTagLink).where(EventTagLink.event_id == event_id)
-    ).all()
-    for link in links:
-        session.delete(link)
-
-    # Удаляем само событие
     session.delete(event)
     session.commit()
-
     return {"message": f"Событие удалено"}
 
 
@@ -477,21 +468,19 @@ async def search_users(
     q: str,
     admin: User = Depends(ensure_admin),
     session: Session = Depends(get_session),
-    role: Role = Depends(get_current_role),
 ):
     if not q or len(q.strip()) < 2:
         return []
 
     search_term = f"%{q.strip().lower()}%"
     statement = (
-        select(User)
-        .where(func.lower(User.nickname).like(search_term))
-        .limit(20)
+        select(User).where(func.lower(User.nickname).like(search_term)).limit(20)
     )
 
     users = session.exec(statement).all()
-    # используем visible_fields_response, чтобы не отдавать лишние поля (пароль и т.д.)
-    return [visible_fields_response(u, role=role) for u in users]
+
+    return [visible_fields_response(u, role=admin.role) for u in users]
+
 
 # ---------------------------------------------------------------------------
 # Посетители мероприятия (административная часть)
@@ -501,13 +490,11 @@ async def get_event_attendants(
     event_id: int,
     admin: User = Depends(ensure_admin),
     session: Session = Depends(get_session),
-    role: Role = Depends(get_current_role),
 ):
     event = session.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
 
-    # Получаем ID пользователей, отмеченных как посетители
     attendant_ids = session.exec(
         select(Attendance.user_id).where(Attendance.event_id == event_id)
     ).all()
@@ -515,13 +502,11 @@ async def get_event_attendants(
     if not attendant_ids:
         return []
 
-    # Явно подсказываем анализатору, что это колонка SQLAlchemy
     statement = select(User).where(
         User.id.in_(attendant_ids)  # type: ignore[attr-defined]
     )
     users = session.exec(statement).all()
-    return [visible_fields_response(u, role=role) for u in users]
-
+    return [visible_fields_response(u, role=admin.role) for u in users]
 
 
 @app.patch("/admin/events/{event_id}/attendants")
@@ -535,14 +520,12 @@ async def update_event_attendants(
     if not event:
         raise HTTPException(status_code=404, detail="Событие не найдено")
 
-    # Удаляем все старые записи о посетителях этого события
     old_attendants = session.exec(
         select(Attendance).where(Attendance.event_id == event_id)
     ).all()
     for att in old_attendants:
         session.delete(att)
 
-    # Добавляем новые
     for uid in attendant_ids:
         session.add(Attendance(user_id=uid, event_id=event_id))
 
@@ -550,10 +533,7 @@ async def update_event_attendants(
     return {"message": "Список посетителей обновлён"}
 
 
-@app.get(
-    "/admin/report",
-    response_class=Response,
-)
+@app.get("/admin/report", response_class=Response)
 def generate_report(
     date_from: date,
     date_to: date,
@@ -562,15 +542,132 @@ def generate_report(
 ):
     excel_file = generate_excel_report(session, date_from, date_to)
     filename = f"report_{date_from}_{date_to}.xlsx"
-
-    with open("/tmp/test_report.xlsx", "wb") as f:
-        f.write(excel_file.getvalue())
+    content = excel_file.getvalue()
 
     return Response(
-        content=excel_file.getvalue(),
+        content=content,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Управление пользователями (административная часть)
+# ---------------------------------------------------------------------------
+@app.get("/admin/users", response_model=List[UserInfoResponse])
+async def get_all_users(
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    users = session.exec(select(User)).all()
+    return [visible_fields_response(u, role=admin.role) for u in users]
+
+
+@app.post("/admin/users", response_model=UserInfoResponse)
+async def create_user(
+    user_data: UserInfoResponse,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    # Проверяем, что никнейм уникален
+    existing = session.exec(
+        select(User).where(User.nickname == user_data.nickname)
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=400, detail="Пользователь с таким никнеймом уже существует"
+        )
+
+    # Создаём пользователя
+    new_user = User(
+        **user_data.model_dump(
+            exclude_unset=True,
+            exclude={"id", "role", "created_at"},
+        )
+    )
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+
+    return visible_fields_response(new_user, role=admin.role)
+
+
+@app.patch("/admin/users/{user_id}", response_model=UserInfoResponse)
+async def update_user(
+    user_id: int,
+    user_data: UserInfoResponse,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    # Обновляем только переданные поля
+    update_dict = user_data.model_dump(exclude_unset=True, exclude={"id", "created_at"})
+
+    # Проверяем уникальность никнейма, если он меняется
+    if "nickname" in update_dict and update_dict["nickname"] != user.nickname:
+        existing = session.exec(
+            select(User).where(User.nickname == update_dict["nickname"])
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=400, detail="Пользователь с таким никнеймом уже существует"
+            )
+
+    for field, value in update_dict.items():
+        if field == "role" and value:
+            setattr(user, field, Role(value))
+        elif field == "password" and not value:
+            continue  # пустой пароль — не меняем
+        elif hasattr(user, field):
+            setattr(user, field, value)
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return visible_fields_response(user, role=admin.role)
+
+
+import logging
+
+logger = logging.getLogger("uvicorn.error")
+
+
+@app.delete("/admin/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):    
+    user = session.get(User, user_id)
+    if not user:
+        logger.warning(f"Пользователь {user_id} не найден")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    # Удаляем связанные записи
+    registrations = session.exec(
+        select(Registration).where(Registration.user_id == user_id)
+    ).all()
+    for reg in registrations:
+        session.delete(reg)
+
+    attendances = session.exec(
+        select(Attendance).where(Attendance.user_id == user_id)
+    ).all()
+    for att in attendances:
+        session.delete(att)
+
+    user_settings = session.get(UserSettingsLink, user_id)
+    if user_settings:
+        session.delete(user_settings)
+
+    session.delete(user)
+    session.commit()
+    
+    return {"message": f"Пользователь {user.nickname} удалён"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

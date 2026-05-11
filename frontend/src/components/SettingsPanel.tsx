@@ -228,7 +228,7 @@ export const SettingsPanel = ({ onBack, user }: SettingsPanelProps) => {
         {/* Кнопка сохранения */}
         <div style={{ marginTop: 16 }}>
           <Button mode="primary" stretched onClick={handleSave}>
-            Сохранить изменения
+            Сохранить
           </Button>
         </div>
       </Panel>

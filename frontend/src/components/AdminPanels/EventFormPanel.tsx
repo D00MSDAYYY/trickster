@@ -146,3 +146,5 @@ export const EventFormPanel = ({ initial, onSave, onCancel }: EventFormPanelProp
     </div>
   );
 };
+
+export default EventFormPanel;

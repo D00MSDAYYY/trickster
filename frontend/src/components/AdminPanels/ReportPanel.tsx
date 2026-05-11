@@ -81,7 +81,7 @@ export const ReportPanel = ({ onBack }: ReportPanelProps) => {
                     </div>
 
                     <Button mode="primary" stretched onClick={handleGenerateReport}>
-                        Сгенерировать
+                        Создать
                     </Button>
                 </div>
             </Panel>

@@ -1,14 +1,20 @@
-# backend/dbs.py
+from pathlib import Path
+from sqlalchemy import event
 from sqlmodel import SQLModel, Session, create_engine
-from sqlalchemy import Column, JSON
+
 from models.internal import *
 from models.external import *
-from pathlib import Path
 
-# Создаём движок SQLite
 BACKEND_DIR = Path(__file__).resolve().parent
 sqlite_url = f"sqlite:///{BACKEND_DIR / 'hameln.db'}"
 engine = create_engine(sqlite_url, echo=False)
+
+
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
 
 
 def init_db():
@@ -60,7 +66,7 @@ def init_db():
             ),
             User(
                 nickname="zaycev",
-                firstname="Заяц",
+                firstname="Матвей",
                 lastname="Зайцев",
                 points=22,
                 password="12345",
@@ -68,7 +74,7 @@ def init_db():
             ),
             User(
                 nickname="demidov",
-                firstname="Демид",
+                firstname="Алексей",
                 lastname="Демидов",
                 points=22,
                 company="Росатом",
@@ -77,7 +83,7 @@ def init_db():
             ),
             User(
                 nickname="nuriev",
-                firstname="Нури",
+                firstname="Роман",
                 lastname="Нуриев",
                 points=22,
                 company="АМС",
@@ -90,7 +96,7 @@ def init_db():
 
         # ========== Настройки для каждого пользователя (UserSettingsLink) ==========
         for user in users:
-            user_settings = UserSettingsLink(user_id=user.id) # type: ignore
+            user_settings = UserSettingsLink(user_id=user.id)  # type: ignore
             session.add(user_settings)
         session.flush()
 
