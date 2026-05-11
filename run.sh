@@ -58,17 +58,32 @@ echo ""
 # Function to check if a port is in use
 port_in_use() {
     local port=$1
+    local method=""
+    local result=1
+
     if command -v lsof &>/dev/null; then
-        lsof -i :"$port" -sTCP:LISTEN -t &>/dev/null
+        method="lsof"
+        if lsof -i :"$port" -sTCP:LISTEN -t &>/dev/null; then
+            result=0
+        fi
     elif command -v ss &>/dev/null; then
-        ss -tuln | grep -q ":$port "
+        method="ss"
+        if ss -tuln | grep -q ":$port "; then
+            result=0
+        fi
     elif command -v netstat &>/dev/null; then
-        netstat -tuln | grep -q ":$port "
+        method="netstat"
+        if netstat -tuln | grep -q ":$port "; then
+            result=0
+        fi
     else
+        method="bash_tcp"
         # Fallback: try to connect via bash tcp redirection
-        (echo > /dev/tcp/localhost/$port) &>/dev/null
-        return $?
+        (echo > /dev/tcp/localhost/$port) &>/dev/null && result=0
     fi
+
+    echo "[DEBUG port_in_use] method=$method port=$port result=$result" >&2
+    return $result
 }
 
 # Function to get the PID of a process listening on a port
