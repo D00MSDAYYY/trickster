@@ -97,7 +97,7 @@ fi
 if port_in_use $REDIS_PORT; then
     echo -e "  ${GREEN}Redis is running on port $REDIS_PORT.${NC}"
     echo -n "  Flushing all Redis data (sessions)... "
-    if redis-cli FLUSHDB > /dev/null 2>&1; then
+    if redis-cli ping > /dev/null 2>&1; then
         echo -e "${GREEN}OK${NC}"
     else
         echo -e "${RED}Failed (might require password or different config)${NC}"
