@@ -563,7 +563,6 @@ def generate_report(
     excel_file = generate_excel_report(session, date_from, date_to)
     filename = f"report_{date_from}_{date_to}.xlsx"
 
-    # Проверка: сохраним временно, чтобы убедиться, что файл валидный
     with open("/tmp/test_report.xlsx", "wb") as f:
         f.write(excel_file.getvalue())
 
