@@ -2,12 +2,16 @@
 import uuid
 from typing import List
 from contextlib import asynccontextmanager
+from datetime import  date
+
 
 import uvicorn
 from sqlmodel import Session, select
 from pydantic_visible_fields import visible_fields_response
 from fastapi import FastAPI, HTTPException, Response, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from report_generator import generate_excel_report
+
 
 from dbs import init_db, get_session
 from models.internal import *
@@ -545,6 +549,29 @@ async def update_event_attendants(
     session.commit()
     return {"message": "Список посетителей обновлён"}
 
+
+@app.get(
+    "/admin/report",
+    response_class=Response,
+)
+def generate_report(
+    date_from: date,
+    date_to: date,
+    admin: User = Depends(ensure_admin),
+    session: Session = Depends(get_session),
+):
+    excel_file = generate_excel_report(session, date_from, date_to)
+    filename = f"report_{date_from}_{date_to}.xlsx"
+
+    # Проверка: сохраним временно, чтобы убедиться, что файл валидный
+    with open("/tmp/test_report.xlsx", "wb") as f:
+        f.write(excel_file.getvalue())
+
+    return Response(
+        content=excel_file.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -78,7 +78,7 @@ echo "  Installing Python dependencies (fastapi, uvicorn, pydantic)..."
 pip install fastapi uvicorn[standard] pydantic sqlmodel pydantic_visible_fields
 
 echo "  Python dependencies already installed."
-fi
+
 if [ ! -f "main.py" ]; then
     echo -e "${RED}Error: main.py not found in $BACKEND_DIR${NC}"
     exit 1
