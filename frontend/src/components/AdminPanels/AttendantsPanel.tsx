@@ -47,10 +47,7 @@ export const AttendantsPanel = ({
         </div>
 
         <Flex gap={8} style={{ marginTop: 20 }}>
-          <Button mode="secondary" onClick={onBack}>
-            Отмена
-          </Button>
-          <Button mode="primary" onClick={handleSave}>
+          <Button mode="primary" stretched onClick={handleSave}>
             Сохранить
           </Button>
         </Flex>

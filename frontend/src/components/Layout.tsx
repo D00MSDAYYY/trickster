@@ -65,7 +65,7 @@ const Layout = ({ user }: LayoutProps) => {
             {user.role === 'admin' && (
               <Button
                 mode={currentPage === 'admin' ? 'primary' : 'tertiary'}
-                size="medium"
+                size="large"
                 stretched
                 style={{ borderRadius: 12, fontWeight: 500 }}
                 onClick={() => handlePageChange('admin')}
@@ -76,7 +76,7 @@ const Layout = ({ user }: LayoutProps) => {
 
             <Button
               mode={currentPage === 'profile' ? 'primary' : 'tertiary'}
-              size="medium"
+              size="large"
               stretched
               style={{ borderRadius: 12, fontWeight: 500 }}
               onClick={() => handlePageChange('profile')}
@@ -86,7 +86,7 @@ const Layout = ({ user }: LayoutProps) => {
 
             <Button
               mode={currentPage === 'home' ? 'primary' : 'tertiary'}
-              size="medium"
+              size="large"
               stretched
               style={{ borderRadius: 12, fontWeight: 500 }}
               onClick={() => handlePageChange('home')}

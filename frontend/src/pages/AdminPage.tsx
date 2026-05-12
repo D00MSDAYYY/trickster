@@ -34,10 +34,6 @@ const AdminPage = () => {
           overflow: 'hidden',
         }}
       >
-        <Typography.Title variant="medium-strong" style={{ marginBottom: 16 }}>
-          Администрирование
-        </Typography.Title>
-
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <CellList>
             <CellSimple
