@@ -28,7 +28,7 @@ export const AttendantsPanel = ({
       <Panel mode="primary" style={{ flex: 1, padding: 12, borderRadius: 16, overflow: 'hidden' }}>
         <Flex justify="space-between" align="center" style={{ marginBottom: 20 }}>
           <Button mode="tertiary" onClick={onBack}>
-            ← Назад
+            ←
           </Button>
           <Typography.Title variant="medium-strong">
             Посетители: {event.title}

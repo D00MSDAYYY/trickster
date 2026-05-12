@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { IconButton, Typography } from '@maxhub/max-ui';
+import { IconButton, Typography, Button, Flex } from '@maxhub/max-ui';
 import EventsPage from '../pages/EventsPage';
 import ProfilePage from '../pages/ProfilePage';
 import NotificationsPage from '../pages/NotificationsPage';
 import AdminPage from '../pages/AdminPage';
 import type { UserInfoResponse } from '../api/types';
-
-
-
-
 
 interface LayoutProps {
   user: UserInfoResponse;
@@ -16,23 +12,8 @@ interface LayoutProps {
 
 const Layout = ({ user }: LayoutProps) => {
   const [currentPage, setCurrentPage] = useState('home');
-  const handleEventClick = () => setCurrentPage('home');
-  const handleProfileClick = () => setCurrentPage('profile');
-  const handleNotificationsClick = () => {
-    setCurrentPage('notifications');
-  };
-  const handleAdminClick = () => setCurrentPage('admin');
 
-  const AdminIcon = () => <span style={{ fontSize: 24 }}>🔧</span>;
-  const AccountIcon = () => <span style={{ fontSize: 24 }}>👤</span>;
-  const NotificationsIcon = () => <span style={{ fontSize: 24 }}>🔔</span>;
-  const EventIcon = () => <span style={{ fontSize: 24 }}>🎉</span>;
-
-  const activeButtonStyle = {
-    filter: 'brightness(0.85)',
-    background: 'rgba(0, 0, 0, 0.05)',
-    transition: 'filter 0.2s ease, background 0.2s ease',
-  };
+  const handlePageChange = (page: string) => setCurrentPage(page);
 
   const pageBackground = 'rgba(0, 0, 0, 0.05)';
 
@@ -43,7 +24,7 @@ const Layout = ({ user }: LayoutProps) => {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        height: '100vh', // фиксируем высоту на весь экран
+        height: '100vh',
       }}>
         <header style={{
           padding: '12px 16px',
@@ -56,11 +37,9 @@ const Layout = ({ user }: LayoutProps) => {
             {currentPage === 'profile' && 'Профиль'}
             {currentPage === 'notifications' && 'Уведомления'}
             {currentPage === 'admin' && 'Панель администратора'}
-
           </Typography.Title>
         </header>
 
-        {/* Область с прокруткой */}
         <div style={{
           flex: 1,
           overflowY: 'auto',
@@ -69,74 +48,63 @@ const Layout = ({ user }: LayoutProps) => {
         }}>
           <div style={{ padding: 16 }}>
             {currentPage === 'admin' && <AdminPage />}
-            {currentPage === 'profile' && (
-              <ProfilePage user={user} />
-            )}
+            {currentPage === 'profile' && <ProfilePage user={user} />}
             {currentPage === 'home' && <EventsPage />}
             {currentPage === 'notifications' && <NotificationsPage />}
           </div>
         </div>
 
+        {/* Нижняя панель навигации – сегментированные кнопки как в теме */}
         <footer style={{
-          display: 'flex',
-          background: 'transparent',
+          padding: '8px 12px',
+          background: 'var(--background_content)',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.15)',
           flexShrink: 0,
-          height: '55px',              // фиксированная высота футера
-          alignItems: 'stretch',       // чтобы кнопки растягивались на всю высоту
-          boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.15)'
         }}>
-          {user.role === 'admin' && (
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-              <IconButton
-                onClick={handleAdminClick}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  ...(currentPage === 'admin' ? activeButtonStyle : {})
-                }}
+          <Flex gap={8}>
+            {user.role === 'admin' && (
+              <Button
+                mode={currentPage === 'admin' ? 'primary' : 'tertiary'}
+                size="medium"
+                stretched
+                style={{ borderRadius: 12, fontWeight: 500 }}
+                onClick={() => handlePageChange('admin')}
               >
-                <AdminIcon />
-              </IconButton>
-            </div>
-          )}
+                👹
+              </Button>
+            )}
 
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <IconButton
-              onClick={handleProfileClick}
-              style={{
-                width: '100%',
-                height: '100%',         // кнопка занимает всю высоту футера
-                ...(currentPage === 'profile' ? activeButtonStyle : {})
-              }}
+            <Button
+              mode={currentPage === 'profile' ? 'primary' : 'tertiary'}
+              size="medium"
+              stretched
+              style={{ borderRadius: 12, fontWeight: 500 }}
+              onClick={() => handlePageChange('profile')}
             >
-              <AccountIcon />
-            </IconButton>
-          </div>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <IconButton
-              onClick={handleEventClick}
-              style={{
-                width: '100%',
-                height: '100%',
-                ...(currentPage === 'home' ? activeButtonStyle : {})
-              }}
-            >
-              <EventIcon />
-            </IconButton>
-          </div>
-          {/* <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <IconButton
-              onClick={handleNotificationsClick}
-              style={{
-                width: '100%',
-                height: '100%',
-                ...(currentPage === 'notifications' ? activeButtonStyle : {})
-              }}
-            >
-              <NotificationsIcon />
-            </IconButton>
-          </div> */}
+              👤
+            </Button>
 
+            <Button
+              mode={currentPage === 'home' ? 'primary' : 'tertiary'}
+              size="medium"
+              stretched
+              style={{ borderRadius: 12, fontWeight: 500 }}
+              onClick={() => handlePageChange('home')}
+            >
+              🎉
+            </Button>
+
+            {/* Уведомления временно скрыты – раскомментируйте, когда понадобятся */}
+            {/* <Button
+              mode={currentPage === 'notifications' ? 'primary' : 'tertiary'}
+              size="medium"
+              stretched
+              style={{ borderRadius: 12, fontWeight: 500 }}
+              onClick={() => handlePageChange('notifications')}
+            >
+              🔔 Уведомления
+            </Button> */}
+          </Flex>
         </footer>
       </main>
     </div>

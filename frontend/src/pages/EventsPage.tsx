@@ -78,7 +78,12 @@ const EventsPage = () => {
   if (loading) return <div style={{ padding: 16 }}>Загрузка событий...</div>;
   if (error) return <div style={{ padding: 16, color: 'red' }}>Ошибка: {error}</div>;
   if (selectedEvent) {
-    return <EventInfoDisplayer event={selectedEvent} onBack={handleBack} />;
+    return <EventInfoDisplayer
+      event={selectedEvent}
+      onBack={() => setSelectedEvent(null)}
+      onRegister={() => handleRegisterSwapped(selectedEvent.id)}
+      onUnregister={() => handleUnregisterSwapped(selectedEvent.id)}
+    />;
   }
 
   // Сортировка: сначала зарегистрированные, затем по возрастанию даты

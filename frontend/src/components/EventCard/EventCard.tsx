@@ -18,8 +18,8 @@ export const EventCard = ({
 }: EventCardProps) => {
   const { title, tags, is_registered, points, date } = eventInfo;
 
-  const SWIPE_THRESHOLD = 65;
-  const SWIPE_FACTOR = 0.3;
+  const SWIPE_THRESHOLD = 80;   
+  const SWIPE_FACTOR = 0.015;      
 
   const [offsetX, setOffsetX] = useState(0);
   const [isPressed, setIsPressed] = useState(false);
